@@ -544,8 +544,8 @@ export default function SwaydApp() {
   const saveStepGoal=()=>{const v=parseInt(stepGoalInput);if(!v||v<0)return;setStepGoal(v);setStepGoalInput("");setEditingStepGoal(false);};
   const logBodyWeight=()=>{const v=parseFloat(weightInput);if(!v||v<20)return;setWeightLog(p=>{const f=p.filter(e=>e.date!==todayStr());return [...f,{date:todayStr(),weight:v}].sort((a,b)=>a.date.localeCompare(b.date)).slice(-60);});setWeightInput("");setShowWeightInput(false);};
 
-  const startWorkout=w=>{setActiveWorkout(w);setCompletedSets({});setElapsed(0);setTimerActive(true);setTab("workout");};
-  const toggleSetP3=(ei,si,ex)=>{const k=ei+"-"+si;const nowDone=!completedSets[k];setCompletedSets(p=>({...p,[k]:nowDone}));if(nowDone){const secs=parseInt(ex.rest)||60;setRestTimer({remaining:secs,total:secs,exName:ex.name});const w=parseFloat(setWeights[k]||0);if(w>0)setPersonalBests(p=>{const prev=p[ex.name]||0;return w>prev?{...p,[ex.name]:w}:p;});}else{setRestTimer(null);}};
+  const startWorkout=w=>{setActiveWorkout(w);setCompletedSets({});setElapsed(0);setTimerActive(true);setSessionRestOverrides({});setTab("workout");};
+  const toggleSetP3=(ei,si,ex)=>{const k=ei+"-"+si;const nowDone=!completedSets[k];setCompletedSets(p=>({...p,[k]:nowDone}));if(nowDone){const restStr=getExRest(ex.id,ex.rest);const secs=parseInt(restStr)||60;setRestTimer({remaining:secs,total:secs,exName:ex.name});const w=parseFloat(setWeights[k]||0);if(w>0)setPersonalBests(p=>{const prev=p[ex.name]||0;return w>prev?{...p,[ex.name]:w}:p;});}else{setRestTimer(null);}};
   // ── Workout completion + milestones ──────────────────────────────────────
   const [completionData,setCompletionData]=useState(null);
   const [earnedMilestones,setEarnedMilestones]=useState(()=>{try{const s=localStorage.getItem("swayd_milestones");return s?JSON.parse(s):[];}catch{return [];}});
@@ -686,6 +686,11 @@ export default function SwaydApp() {
   const addExerciseFromLib=(wid,name)=>{setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:[...w.exercises,{id:uid(),name,sets:"3",reps:"10-12",rest:"60s",tip:"Focus on form"}]}:w));setAddExMode(null);setExSearch("");};
   const addCustomExercise=wid=>{if(!customEx.name.trim())return;setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:[...w.exercises,{id:uid(),...customEx}]}:w));setCustomEx({name:"",sets:"3",reps:"10",rest:"60s",tip:""});setCustomMode(false);setAddExMode(null);};
   const updateExRest=(wid,eid,rest)=>{setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:w.exercises.map(e=>e.id===eid?{...e,rest}:e)}:w));setEditingRestEx(null);};
+
+  // Per-session rest overrides (don't modify saved workout)
+  const [sessionRestOverrides,setSessionRestOverrides]=useState({});
+  const getExRest=(exId,defaultRest)=>sessionRestOverrides[exId]||defaultRest;
+  const setSessionRest=(exId,rest)=>setSessionRestOverrides(p=>({...p,[exId]:rest}));
 
   const simulateScan=()=>{
     setScanAnimating(true);setScanResult(null);
@@ -1060,7 +1065,25 @@ export default function SwaydApp() {
 
             {tab==="macros"&&(
               <div className="page fade-in">
-                <div className="page-title">MACRO TRACKER</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div className="page-title" style={{marginBottom:0}}>MACROS</div>
+                  <button onClick={()=>{setShowMacroEditor(v=>!v);setMacroInputs({calories:String(macroGoals.calories),protein:String(macroGoals.protein),carbs:String(macroGoals.carbs),fat:String(macroGoals.fat)});}}
+                    style={{background:showMacroEditor?T.accent+"22":"transparent",border:"1px solid "+T.accent+"44",borderRadius:"7px",color:T.accent,fontSize:".58rem",letterSpacing:".1em",padding:"5px 12px",cursor:"pointer",fontFamily:T.body}}>
+                    {showMacroEditor?"CANCEL":"EDIT TARGETS"}
+                  </button>
+                </div>
+                {showMacroEditor&&(
+                  <div className="card" style={{marginBottom:12}}>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                      {[{k:"calories",label:"CALORIES"},{k:"protein",label:"PROTEIN (g)"},{k:"carbs",label:"CARBS (g)"},{k:"fat",label:"FAT (g)"}].map(f=>(
+                        <div key={f.k}><div className="form-label">{f.label}</div>
+                          <input className="form-input" style={{padding:"7px 10px"}} type="number" value={macroInputs[f.k]} onChange={e=>setMacroInputs(p=>({...p,[f.k]:e.target.value}))}/>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="create-btn" style={{marginTop:0}} onClick={saveMacroOverride}>SAVE TARGETS</button>
+                  </div>
+                )}
                 <div className="date-nav">
                   <button className="date-nav-btn" onClick={goToPrevDay}>{"<<"}</button>
                   <div className="date-nav-label">
@@ -1069,210 +1092,119 @@ export default function SwaydApp() {
                   </div>
                   <button className="date-nav-btn" onClick={goToNextDay} disabled={isToday} style={{opacity:isToday?0.3:1}}>{">>"}</button>
                 </div>
-                <div className="card" style={{marginBottom:16}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                    <div style={{fontSize:".6rem",letterSpacing:".18em",color:T.muted}}>TODAY'S SPLIT</div>
-                    <button onClick={()=>{setShowMacroEditor(v=>!v);setMacroInputs({calories:String(macroGoals.calories),protein:String(macroGoals.protein),carbs:String(macroGoals.carbs),fat:String(macroGoals.fat)});}}
-                      style={{background:showMacroEditor?T.accent+"22":"transparent",border:"1px solid "+T.accent+"44",borderRadius:"7px",color:T.accent,fontSize:".58rem",letterSpacing:".1em",padding:"4px 10px",cursor:"pointer",fontFamily:T.body}}>
-                      {showMacroEditor?"CANCEL":"EDIT TARGETS"}
-                    </button>
-                  </div>
-                  {showMacroEditor?(
-                    <div>
-                      <div style={{fontSize:".6rem",color:T.muted,marginBottom:10}}>Set your own targets manually.</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-                        {[{k:"calories",label:"CALORIES"},{k:"protein",label:"PROTEIN (g)"},{k:"carbs",label:"CARBS (g)"},{k:"fat",label:"FAT (g)"}].map(f=>(
-                          <div key={f.k}>
-                            <div className="form-label">{f.label}</div>
-                            <input className="form-input" style={{padding:"7px 10px"}} type="number" value={macroInputs[f.k]} onChange={e=>setMacroInputs(p=>({...p,[f.k]:e.target.value}))}/>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="create-btn" style={{marginTop:0}} onClick={saveMacroOverride}>SAVE TARGETS</button>
-                    </div>
-                  ):(
-                    totals.protein>0||totals.carbs>0||totals.fat>0
-                      ? <MacroDonut protein={totals.protein} carbs={totals.carbs} fat={totals.fat}/>
-                      : <div style={{textAlign:"center",padding:"8px 0",fontSize:".7rem",color:T.faint}}>Log food to see your split</div>
-                  )}
-                </div>
-
-                <div className="card" style={{marginBottom:16}}>
-                  <MacroBar label="Calories" value={totals.cal} goal={macroGoals.calories} color="#FF5733"/>
+                <div className="card" style={{marginBottom:12}}>
+                  <MacroBar label="Calories" value={totals.cal} goal={macroGoals.calories} color={T.accent}/>
                   <MacroBar label="Protein" value={totals.protein} goal={macroGoals.protein} color="#3B82F6"/>
                   <MacroBar label="Carbs" value={totals.carbs} goal={macroGoals.carbs} color="#F59E0B"/>
                   <MacroBar label="Fat" value={totals.fat} goal={macroGoals.fat} color="#10B981"/>
-                  <div style={{textAlign:"center",marginTop:12,fontSize:".65rem",color:"#555"}}>REMAINING: {Math.max(0,macroGoals.calories-totals.cal)} kcal</div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:"1px solid "+T.border}}>
+                    <div style={{fontSize:".62rem",color:T.muted}}>REMAINING</div>
+                    <div style={{fontSize:".62rem",color:T.text,fontWeight:600}}>{Math.max(0,macroGoals.calories-totals.cal)} kcal</div>
+                  </div>
                 </div>
-
-                {addingFood?(
-                  <div className="card" style={{marginBottom:16}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                      <div style={{fontSize:".7rem",letterSpacing:".15em",color:"#aaa"}}>ADD TO MEAL</div>
-                      <button className="ghost-btn" onClick={()=>{setAddingFood(false);setScanResult(null);setScanInput("");}}>x</button>
+                <div className="card" style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontSize:".6rem",letterSpacing:".15em",color:T.muted}}>LOG FOOD</div>
+                    <div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>{setAddingFood(true);setFoodTab("barcode");setScanResult(null);setScanInput("");}}
+                        style={{background:"none",border:"1px solid "+T.border2,borderRadius:7,color:T.muted,fontSize:".6rem",padding:"4px 10px",cursor:"pointer",fontFamily:T.body}}>SCAN</button>
+                      <button onClick={()=>{setAddingFood(true);setFoodTab("manual");}}
+                        style={{background:"none",border:"1px solid "+T.border2,borderRadius:7,color:T.muted,fontSize:".6rem",padding:"4px 10px",cursor:"pointer",fontFamily:T.body}}>MANUAL</button>
                     </div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-                      {MEALS.map(m=><button key={m} className={"meal-chip"+(selectedMeal===m?" meal-chip-active":"")} onClick={()=>setSelectedMeal(m)}>{m}</button>)}
-                    </div>
-                    <div style={{display:"flex",gap:6,marginBottom:14}}>
-                      {[["quick","QUICK"],["search","SEARCH"],["custom","MY FOODS"],["barcode","SCAN"]].map(([k,l])=>(
-                        <button key={k} className={"food-mode-tab"+(foodTab===k?" food-mode-active":"")} onClick={()=>{setFoodTab(k);setScanResult(null);setFoodSearchResults([]);}}>{l}</button>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                    {MEALS.map(m=><button key={m} className={"meal-chip"+(selectedMeal===m?" meal-chip-active":"")} onClick={()=>setSelectedMeal(m)}>{m}</button>)}
+                  </div>
+                  <div style={{position:"relative",marginBottom:8}}>
+                    <input className="form-input" placeholder="Search food..."
+                      value={foodSearch}
+                      onChange={e=>{setFoodSearch(e.target.value);if(e.target.value.trim()){setFoodTab("search");setAddingFood(true);}}}/>
+                    {foodSearchLoading&&<div style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:".65rem",color:T.accent}}>...</div>}
+                  </div>
+                  {!foodSearch.trim()&&(
+                    <div className="food-pick-grid">
+                      {quickFoods.slice(0,4).map(f=>(
+                        <button key={f.id} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
+                          <div className="fpb-name">{f.name}</div>
+                          <div style={{fontSize:".56rem",color:T.faint,marginBottom:2}}>{f.amount}{f.unit}</div>
+                          <div className="fpb-macros"><span style={{color:T.accent}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span></div>
+                        </button>
                       ))}
                     </div>
-
-                    {foodTab==="quick"&&(
-                      <div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                          <div style={{fontSize:".65rem",color:"#555",letterSpacing:".1em"}}>
-                            {showQuickFoodEditor?"EDITING QUICK FOODS":"TAP ANY FOOD TO ADD"}
+                  )}
+                  {foodSearchResults.length>0&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:4}}>
+                      {foodSearchResults.map((f,i)=>(
+                        <button key={i} className="food-pick-btn" style={{width:"100%",textAlign:"left"}} onClick={()=>{addQuickFood(f);setFoodSearch("");setFoodSearchResults([]);setAddingFood(false);}}>
+                          <div className="fpb-name">{f.name}</div>
+                          <div className="fpb-macros"><span style={{color:T.accent}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {foodSearchError&&<div style={{fontSize:".7rem",color:T.faint,textAlign:"center",padding:"8px 0"}}>{foodSearchError}</div>}
+                  {addingFood&&foodTab==="manual"&&(
+                    <div style={{marginTop:8,borderTop:"1px solid "+T.border,paddingTop:10}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                        {[{k:"name",label:"FOOD NAME",full:true},{k:"cal",label:"CALORIES"},{k:"protein",label:"PROTEIN"},{k:"carbs",label:"CARBS"},{k:"fat",label:"FAT"}].map(f=>(
+                          <div key={f.k} style={f.full?{gridColumn:"1/-1"}:{}}>
+                            <div className="form-label">{f.label}</div>
+                            <input className="form-input" style={{padding:"6px 10px"}} type={f.k==="name"?"text":"number"} value={newFood[f.k]} onChange={e=>setNewFood(p=>({...p,[f.k]:e.target.value}))}/>
                           </div>
-                          <button
-                            onClick={()=>setShowQuickFoodEditor(v=>!v)}
-                            style={{background:showQuickFoodEditor?"#FF5733":"transparent",border:"1px solid #FF573366",borderRadius:"7px",color:showQuickFoodEditor?"#fff":"#FF5733",fontSize:".65rem",letterSpacing:".1em",padding:"5px 12px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-                            {showQuickFoodEditor?"DONE EDITING":"EDIT FOODS"}
-                          </button>
-                        </div>
-                        {showQuickFoodEditor?(
-                          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                            <div style={{fontSize:".6rem",color:"#555",letterSpacing:".08em",marginBottom:2}}>Edit name, amount, unit and macros for each food slot.</div>
-                            {quickFoods.map((f,i)=>(
-                              <div key={f.id} style={{background:"#161616",border:"1px solid #2a2a2a",borderRadius:10,padding:"12px"}}>
-                                <div style={{fontSize:".65rem",color:"#FF5733",letterSpacing:".1em",marginBottom:8}}>SLOT {i+1}</div>
-                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                                  <div style={{gridColumn:"1/-1"}}><div className="form-label">FOOD NAME</div><input className="form-input" style={{padding:"6px 10px"}} value={f.name} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/></div>
-                                  <div>
-                                    <div className="form-label">AMOUNT</div>
-                                    <input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.amount} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,amount:Number(e.target.value)}:x))}/>
-                                  </div>
-                                  <div>
-                                    <div className="form-label">UNIT</div>
-                                    <select className="form-input" style={{padding:"6px 10px"}} value={f.unit} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,unit:e.target.value}:x))}>
-                                      {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
-                                    </select>
-                                  </div>
-                                  <div><div className="form-label">CALORIES</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.cal} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,cal:Number(e.target.value)}:x))}/></div>
-                                  <div><div className="form-label">PROTEIN (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.protein} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,protein:Number(e.target.value)}:x))}/></div>
-                                  <div><div className="form-label">CARBS (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.carbs} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,carbs:Number(e.target.value)}:x))}/></div>
-                                  <div><div className="form-label">FAT (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.fat} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,fat:Number(e.target.value)}:x))}/></div>
-                                </div>
-                              </div>
-                            ))}
-                            <button className="ghost-btn" style={{fontSize:".62rem",color:"#444",padding:"8px 0",letterSpacing:".1em"}} onClick={()=>setQuickFoods(DEFAULT_QUICK_FOODS)}>RESET TO DEFAULTS</button>
-                          </div>
-                        ):(
-                          <div className="food-pick-grid">
-                            {quickFoods.map(f=>(
-                              <button key={f.id} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
-                                <div className="fpb-name">{f.name}</div>
-                                <div style={{fontSize:".58rem",color:"#555",marginBottom:3}}>{f.amount}{f.unit}</div>
-                                <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        ))}
                       </div>
-                    )}
-
-                    {foodTab==="search"&&(
-                      <div>
-                        <div style={{position:"relative",marginBottom:10}}>
-                          <input className="form-input" placeholder="Search any food..." value={foodSearch} onChange={e=>setFoodSearch(e.target.value)} autoFocus/>
-                          {foodSearchLoading&&<div style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:".65rem",color:"#FF5733"}}>...</div>}
-                        </div>
-                        {foodSearchError&&<div style={{textAlign:"center",padding:"12px 0",fontSize:".7rem",color:"#555"}}>{foodSearchError}</div>}
-                        {!foodSearch.trim()&&<div style={{textAlign:"center",padding:"16px 0",color:"#444",fontSize:".72rem"}}>Search any food<br/><span style={{fontSize:".62rem",color:"#333"}}>AI-powered nutrition lookup</span></div>}
-                        <div className="food-pick-grid">
-                          {foodSearchResults.map((f,i)=>(
-                            <button key={i} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
-                              <div className="fpb-name">{f.name}</div>
-                              <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
-                            </button>
-                          ))}
+                      <div style={{display:"flex",gap:8}}>
+                        <button className="ghost-btn" style={{flex:1,border:"1px solid "+T.border2,borderRadius:8,padding:"9px 0",fontSize:".7rem"}} onClick={()=>{setAddingFood(false);setFoodTab("quick");}}>CANCEL</button>
+                        <button className="create-btn" style={{flex:2,marginTop:0}} onClick={()=>{if(!newFood.name||!newFood.cal)return;addQuickFood({name:newFood.name,cal:Number(newFood.cal),protein:Number(newFood.protein)||0,carbs:Number(newFood.carbs)||0,fat:Number(newFood.fat)||0,amount:1,unit:"serving"});setNewFood({name:"",cal:"",protein:"",carbs:"",fat:""});setAddingFood(false);}}>ADD FOOD</button>
+                      </div>
+                    </div>
+                  )}
+                  {addingFood&&foodTab==="barcode"&&(
+                    <div style={{marginTop:8,borderTop:"1px solid "+T.border,paddingTop:10}}>
+                      <div className="scanner-viewport">
+                        <div className={"scanner-frame"+(scanAnimating?" scanner-active":"")}>
+                          <div className="scanner-corner tl"/><div className="scanner-corner tr"/>
+                          <div className="scanner-corner bl"/><div className="scanner-corner br"/>
+                          {scanAnimating&&<div className="scanner-beam"/>}
+                          <div className="scanner-inner">
+                            {!scanAnimating&&!scanResult&&<div style={{textAlign:"center"}}><div style={{fontSize:"1.5rem",marginBottom:4}}>|||</div><div style={{fontSize:".65rem",color:T.faint}}>READY TO SCAN</div></div>}
+                            {scanAnimating&&<div style={{textAlign:"center",fontSize:".65rem",color:T.accent}}>SCANNING...</div>}
+                            {scanResult&&scanResult.found&&<div style={{textAlign:"center",padding:"0 8px"}}><div style={{fontSize:".6rem",color:"#10B981",marginBottom:4}}>FOUND</div><div style={{fontSize:".78rem",color:T.text,fontWeight:600,marginBottom:4}}>{scanResult.food.name}</div><div style={{display:"flex",justifyContent:"center",gap:10,fontSize:".65rem"}}><span style={{color:T.accent}}>{scanResult.food.cal}kcal</span><span style={{color:"#3B82F6"}}>{scanResult.food.protein}p</span></div></div>}
+                            {scanResult&&!scanResult.found&&<div style={{textAlign:"center",fontSize:".65rem",color:"#ff3b3b"}}>NOT FOUND</div>}
+                          </div>
                         </div>
                       </div>
-                    )}
-
-                    {foodTab==="custom"&&(
-                      <div>
-                        {!showCustomFoodForm?(
-                          <>
-                            {customFoods.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#444",fontSize:".75rem"}}>No saved foods yet.</div>}
-                            <div className="food-pick-grid" style={{marginBottom:10}}>
-                              {customFoods.map(f=>(
-                                <div key={f.id} style={{position:"relative"}}>
-                                  <button className="food-pick-btn" style={{width:"100%"}} onClick={()=>addQuickFood(f)}>
-                                    <div className="fpb-name">{f.name}</div>
-                                    <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span></div>
-                                  </button>
-                                  <button className="custom-food-del" onClick={()=>setCustomFoods(p=>p.filter(x=>x.id!==f.id))}>x</button>
-                                </div>
-                              ))}
-                            </div>
-                            <button className="add-ex-trigger" onClick={()=>setShowCustomFoodForm(true)}>+ CREATE FOOD</button>
-                          </>
-                        ):(
-                          <div className="custom-ex-form">
-                            <div className="form-label">FOOD NAME</div>
-                            <input className="form-input" placeholder="e.g. My Protein Bowl" value={newFood.name} onChange={e=>setNewFood(p=>({...p,name:e.target.value}))}/>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,margin:"8px 0"}}>
-                              <div><div className="form-label">CALORIES</div><input className="form-input" type="number" value={newFood.cal} onChange={e=>setNewFood(p=>({...p,cal:e.target.value}))}/></div>
-                              <div><div className="form-label">PROTEIN</div><input className="form-input" type="number" value={newFood.protein} onChange={e=>setNewFood(p=>({...p,protein:e.target.value}))}/></div>
-                              <div><div className="form-label">CARBS</div><input className="form-input" type="number" value={newFood.carbs} onChange={e=>setNewFood(p=>({...p,carbs:e.target.value}))}/></div>
-                              <div><div className="form-label">FAT</div><input className="form-input" type="number" value={newFood.fat} onChange={e=>setNewFood(p=>({...p,fat:e.target.value}))}/></div>
-                            </div>
-                            <div style={{display:"flex",gap:8}}>
-                              <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"9px 0",fontSize:".7rem"}} onClick={()=>setShowCustomFoodForm(false)}>CANCEL</button>
-                              <button className="create-btn" style={{flex:2,marginTop:0}} onClick={saveCustomFood}>SAVE FOOD</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {foodTab==="barcode"&&(
-                      <div className="barcode-section">
-                        <div className="scanner-viewport">
-                          <div className={"scanner-frame"+(scanAnimating?" scanner-active":"")}>
-                            <div className="scanner-corner tl"/><div className="scanner-corner tr"/>
-                            <div className="scanner-corner bl"/><div className="scanner-corner br"/>
-                            {scanAnimating&&<div className="scanner-beam"/>}
-                            <div className="scanner-inner">
-                              {!scanAnimating&&!scanResult&&<div style={{textAlign:"center"}}><div style={{fontSize:"2rem",marginBottom:6}}>[barcode]</div><div style={{fontSize:".65rem",color:"#555"}}>READY TO SCAN</div></div>}
-                              {scanAnimating&&<div style={{textAlign:"center",fontSize:".65rem",color:"#FF5733"}}>SCANNING...</div>}
-                              {scanResult&&scanResult.found&&(
-                                <div style={{textAlign:"center",padding:"0 8px"}}>
-                                  <div style={{fontSize:".6rem",color:"#10B981",marginBottom:6}}>FOUND</div>
-                                  <div style={{fontSize:".8rem",color:"#fff",fontWeight:600,marginBottom:4}}>{scanResult.food.name}</div>
-                                  <div style={{display:"flex",justifyContent:"center",gap:10,fontSize:".65rem"}}>
-                                    <span style={{color:"#FF5733"}}>{scanResult.food.cal}kcal</span>
-                                    <span style={{color:"#3B82F6"}}>{scanResult.food.protein}p</span>
-                                  </div>
-                                </div>
-                              )}
-                              {scanResult&&!scanResult.found&&<div style={{textAlign:"center"}}><div style={{fontSize:".65rem",color:"#ff3b3b"}}>NOT FOUND</div></div>}
-                            </div>
+                      <input className="form-input" placeholder="Enter barcode or leave blank for demo" value={scanInput} onChange={e=>setScanInput(e.target.value)} style={{marginBottom:8}}/>
+                      {scanResult&&scanResult.found?(<div style={{display:"flex",gap:8}}><button className="ghost-btn" style={{flex:1,border:"1px solid "+T.border2,borderRadius:8,padding:"10px 0",fontSize:".7rem"}} onClick={()=>{setScanResult(null);setScanInput("");}}>RESCAN</button><button className="create-btn" style={{flex:2,marginTop:0}} onClick={addScannedFood}>ADD TO LOG</button></div>):(
+                        <button className="create-btn" style={{marginTop:0}} onClick={simulateScan} disabled={scanAnimating}>{scanAnimating?"SCANNING...":"SCAN BARCODE"}</button>
+                      )}
+                    </div>
+                  )}
+                  <button style={{width:"100%",background:"none",border:"none",color:T.faint,fontSize:".6rem",letterSpacing:".1em",padding:"8px 0 2px",cursor:"pointer",fontFamily:T.body,marginTop:4,textAlign:"center"}} onClick={()=>setShowQuickFoodEditor(v=>!v)}>
+                    {showQuickFoodEditor?"HIDE QUICK FOOD EDITOR":"EDIT QUICK FOODS"}
+                  </button>
+                  {showQuickFoodEditor&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:8,borderTop:"1px solid "+T.border,paddingTop:8}}>
+                      {quickFoods.map((f,i)=>(
+                        <div key={f.id} style={{background:T.surface2,border:"1px solid "+T.border2,borderRadius:8,padding:"10px"}}>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+                            <div style={{gridColumn:"1/-1"}}><div className="form-label">NAME</div><input className="form-input" style={{padding:"5px 8px"}} value={f.name} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/></div>
+                            <div><div className="form-label">AMOUNT</div><input className="form-input" style={{padding:"5px 8px"}} type="number" value={f.amount} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,amount:Number(e.target.value)}:x))}/></div>
+                            <div><div className="form-label">UNIT</div><select className="form-input" style={{padding:"5px 8px"}} value={f.unit} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,unit:e.target.value}:x))}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</select></div>
+                            <div><div className="form-label">CALORIES</div><input className="form-input" style={{padding:"5px 8px"}} type="number" value={f.cal} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,cal:Number(e.target.value)}:x))}/></div>
+                            <div><div className="form-label">PROTEIN</div><input className="form-input" style={{padding:"5px 8px"}} type="number" value={f.protein} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,protein:Number(e.target.value)}:x))}/></div>
                           </div>
                         </div>
-                        <input className="form-input" placeholder="e.g. 5000112548167 (or leave blank)" value={scanInput} onChange={e=>setScanInput(e.target.value)} style={{marginBottom:6}}/>
-                        {scanResult&&scanResult.found?(
-                          <div style={{display:"flex",gap:8}}>
-                            <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"10px 0",fontSize:".7rem"}} onClick={()=>{setScanResult(null);setScanInput("");}}>RESCAN</button>
-                            <button className="create-btn" style={{flex:2,marginTop:0}} onClick={addScannedFood}>ADD TO LOG</button>
-                          </div>
-                        ):(
-                          <button className="create-btn" style={{marginTop:0}} onClick={simulateScan} disabled={scanAnimating}>{scanAnimating?"SCANNING...":"SCAN BARCODE"}</button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ):(
-                  <button className="add-food-btn" onClick={()=>setAddingFood(true)}>+ LOG FOOD{!isToday?" FOR "+friendlyDate(selectedDate):""}</button>
-                )}
-
+                      ))}
+                      <button className="ghost-btn" style={{fontSize:".6rem",color:T.faint,padding:"4px 0"}} onClick={()=>setQuickFoods(DEFAULT_QUICK_FOODS)}>RESET TO DEFAULTS</button>
+                    </div>
+                  )}
+                </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div className="section-label" style={{marginBottom:0}}>FOOD LOG</div>
                   <button className="add-routine-btn" style={{fontSize:".58rem",padding:"5px 10px"}} onClick={copyPreviousDay}>COPY YESTERDAY</button>
                 </div>
+
                 {foodLog.length===0&&(
                   <div style={{textAlign:"center",padding:"28px 20px",color:T.faint}}>
                     <div style={{fontFamily:T.display,fontSize:"1.2rem",color:T.muted,letterSpacing:".1em",marginBottom:6}}>NOTHING LOGGED YET</div>
@@ -1534,7 +1466,21 @@ export default function SwaydApp() {
                         </div>
                         <button className="watch-btn" onClick={()=>setVideoModal(ex.name)}>WATCH</button>
                       </div>
-                      <div className="ex-meta"><span>{ex.sets} sets</span><span>{ex.reps} reps</span><span>Rest {ex.rest}</span></div>
+                      <div className="ex-meta"><span>{ex.sets} sets</span><span>{ex.reps} reps</span></div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                        <span style={{fontSize:".58rem",color:T.muted,letterSpacing:".1em"}}>REST:</span>
+                        {REST_PRESETS.map(s=>{
+                          const rs=s+"s";
+                          const currentRest=getExRest(ex.id,ex.rest);
+                          return (
+                            <button key={s}
+                              onClick={()=>setSessionRest(ex.id,rs)}
+                              style={{background:currentRest===rs?T.accent:"#1a1a1a",border:"1px solid "+(currentRest===rs?T.accent:"#2a2a2a"),borderRadius:6,color:currentRest===rs?"#fff":"#888",fontSize:".65rem",padding:"4px 10px",cursor:"pointer",fontFamily:T.body,fontWeight:currentRest===rs?600:400}}>
+                              {s}s
+                            </button>
+                          );
+                        })}
+                      </div>
                       {suggestion&&(
                         <div className="overload-hint">
                           <span className="overload-last">Last: {suggestion.lastWeight}kg</span>
