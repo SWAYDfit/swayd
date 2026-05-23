@@ -1,67 +1,84 @@
+/* eslint-disable */
 import { useState, useEffect, useRef, useMemo } from "react";
 
-const EXERCISE_VIDEOS = {
-  "Barbell Bench Press":"rT7DggyN4so","Incline Dumbbell Press":"8iPEnn-ltC8",
-  "Cable Lateral Raise":"PPrbgZl0eSc","Overhead Press":"2yjwXTZQDDI",
-  "Tricep Rope Pushdown":"vB5OHsJ3EME","Chest Dips":"2z8JmcrW-As",
-  "Pull-Ups":"eGo4IYlbE5g","Barbell Row":"G8l_8chR5BE",
-  "Lat Pulldown":"CAwf7n6Luuc","Cable Face Pull":"rep-qVOkqgk",
-  "EZ-Bar Curl":"zG2i9C5bMFk","Incline Hammer Curl":"soxrZlIl35U",
-  "Barbell Back Squat":"ultWZbUMPL8","Romanian Deadlift":"JCXUYuzwNrM",
-  "Leg Press":"IZxyjW7MPJQ","Walking Lunges":"L8fvypPrzzs",
-  "Leg Curl":"1Tq3QdYUuHs","Calf Raises":"gwLzBJYoWlA",
-  "Burpees":"dZgVxmf6jkA","Jump Squats":"CVaEhXotL7M",
-  "Mountain Climbers":"nmwgirgXLYM","Kettlebell Swings":"YSxHifyI6s8",
-  "Box Jumps":"52r_Ul5k03g","Battle Ropes":"ut4PNIKBiHQ",
-  "Deadlift":"op9kVnSso6Q","Push-Ups":"IODxDxX7oi4",
-  "Plank":"pSHjTRCQxIw","Dumbbell Flyes":"eozdVDA78K0",
-  "Seated Row":"xQNrFHEMhI4","Hip Thrust":"SEdqd1n0cvg",
-};
-const EXERCISE_LIBRARY = Object.keys(EXERCISE_VIDEOS);
+const WATER_GOAL = 8;
 
-const EXERCISE_GUIDE = {
-  "Barbell Bench Press":   {muscles:"Chest, Triceps, Front Delts",difficulty:"Intermediate",equipment:"Barbell, Bench",cues:["Retract shoulder blades into the bench","Lower bar to mid-chest with control","Drive feet into floor as you press","Keep wrists stacked over elbows"],animation:"push"},
-  "Incline Dumbbell Press":{muscles:"Upper Chest, Front Delts, Triceps",difficulty:"Intermediate",equipment:"Dumbbells, Incline Bench",cues:["Set bench to 30-45 degrees","Control the eccentric for 2-3 sec","Don't flare elbows past 75 degrees","Touch dumbbells at the top"],animation:"push"},
-  "Cable Lateral Raise":  {muscles:"Lateral Deltoids",difficulty:"Beginner",equipment:"Cable Machine",cues:["Lead with elbows not hands","Slight forward lean at hips","Stop at shoulder height","Slow return, feel the stretch"],animation:"raise"},
-  "Overhead Press":       {muscles:"Shoulders, Triceps, Upper Traps",difficulty:"Intermediate",equipment:"Barbell or Dumbbells",cues:["Brace core before every rep","Bar travels in slight arc around face","Full lockout at top","Don't hyperextend lower back"],animation:"press"},
-  "Tricep Rope Pushdown": {muscles:"Triceps",difficulty:"Beginner",equipment:"Cable Machine, Rope",cues:["Keep upper arms pinned to sides","Splay rope at full extension","Squeeze hard at the bottom","Don't lean forward"],animation:"push"},
-  "Chest Dips":           {muscles:"Lower Chest, Triceps, Front Delts",difficulty:"Intermediate",equipment:"Dip Bars",cues:["Lean forward 15-20 degrees for chest","Lower until upper arms parallel","Control descent 2 sec down","Squeeze chest at top"],animation:"push"},
-  "Pull-Ups":             {muscles:"Lats, Biceps, Rear Delts",difficulty:"Intermediate",equipment:"Pull-Up Bar",cues:["Start from full dead hang","Drive elbows down and back","Chin clears the bar","Lower with control"],animation:"pull"},
-  "Barbell Row":          {muscles:"Lats, Rhomboids, Biceps",difficulty:"Intermediate",equipment:"Barbell",cues:["Hinge to 45 degree hip angle","Row to lower chest or belly button","Lead with elbows not hands","Hold 1 sec at the top"],animation:"pull"},
-  "Lat Pulldown":         {muscles:"Lats, Biceps, Rear Delts",difficulty:"Beginner",equipment:"Cable Machine, Bar",cues:["Lean back slightly 10-15 degrees","Drive elbows down toward hips","Bar comes to upper chest","Full stretch at top"],animation:"pull"},
-  "Cable Face Pull":      {muscles:"Rear Delts, External Rotators, Traps",difficulty:"Beginner",equipment:"Cable Machine, Rope",cues:["Set cable at forehead height","Pull rope to forehead split hands","Externally rotate at the end","Control the return"],animation:"pull"},
-  "EZ-Bar Curl":          {muscles:"Biceps, Brachialis",difficulty:"Beginner",equipment:"EZ-Bar",cues:["Upper arms stay vertical","Full range full extension","No swinging or body momentum","Squeeze at the top"],animation:"curl"},
-  "Incline Hammer Curl":  {muscles:"Biceps, Brachioradialis",difficulty:"Beginner",equipment:"Dumbbells, Incline Bench",cues:["Keep upper arm vertical","Neutral grip throughout","Slow 3-sec negative","Don't swing torso"],animation:"curl"},
-  "Barbell Back Squat":   {muscles:"Quads, Glutes, Hamstrings, Core",difficulty:"Advanced",equipment:"Barbell, Squat Rack",cues:["Break at hips and knees simultaneously","Knees track over toes","Hit parallel or below","Drive through mid-foot on way up"],animation:"squat"},
-  "Romanian Deadlift":    {muscles:"Hamstrings, Glutes, Lower Back",difficulty:"Intermediate",equipment:"Barbell or Dumbbells",cues:["Push hips back not down","Feel hamstring stretch in bottom","Keep bar close to legs","Squeeze glutes hard at lockout"],animation:"hinge"},
-  "Leg Press":            {muscles:"Quads, Glutes, Hamstrings",difficulty:"Beginner",equipment:"Leg Press Machine",cues:["High wide stance hits glutes more","Low narrow hits quads more","Don't lock knees out hard","Control descent 2 sec down"],animation:"squat"},
-  "Walking Lunges":       {muscles:"Quads, Glutes, Hamstrings, Balance",difficulty:"Beginner",equipment:"Bodyweight or Dumbbells",cues:["Long stride for glute emphasis","Front knee stays behind toes","Rear knee hovers 1 inch off floor","Drive off front heel to stand"],animation:"lunge"},
-  "Leg Curl":             {muscles:"Hamstrings",difficulty:"Beginner",equipment:"Leg Curl Machine",cues:["Full extension at bottom","Curl all the way to end range","3-sec negative on every rep","Avoid hip flexor compensation"],animation:"curl"},
-  "Calf Raises":          {muscles:"Gastrocnemius, Soleus",difficulty:"Beginner",equipment:"Machine or Step",cues:["Full stretch at the bottom pause","Rise onto big toe","Hold peak contraction 1 sec","Slow controlled descent"],animation:"raise"},
-  "Burpees":              {muscles:"Full Body, Cardio",difficulty:"Intermediate",equipment:"Bodyweight",cues:["Explode on the jump arms overhead","Land soft knees bent","Kick feet back to plank in one motion","Maintain rhythm over 30 seconds"],animation:"burpee"},
-  "Jump Squats":          {muscles:"Quads, Glutes, Calves, Cardio",difficulty:"Intermediate",equipment:"Bodyweight",cues:["Squat to parallel before jumping","Explode straight up","Land softly absorb through hips","Reset quickly don't pause"],animation:"squat"},
-  "Mountain Climbers":    {muscles:"Core, Shoulders, Hip Flexors, Cardio",difficulty:"Beginner",equipment:"Bodyweight",cues:["Hips level with shoulders","Quick alternating knee drives","Keep core braced throughout","Arms stay straight don't collapse"],animation:"plank"},
-  "Kettlebell Swings":    {muscles:"Glutes, Hamstrings, Core, Cardio",difficulty:"Intermediate",equipment:"Kettlebell",cues:["Hip hinge NOT a squat","Power comes from glute snap","Bell floats to shoulder height","Hike back between legs with control"],animation:"hinge"},
-  "Box Jumps":            {muscles:"Quads, Glutes, Calves, Power",difficulty:"Intermediate",equipment:"Plyo Box",cues:["Swing arms for momentum","Land with soft knees mid-foot","Step DOWN don't jump off","Full hip extension at top"],animation:"squat"},
-  "Battle Ropes":         {muscles:"Shoulders, Core, Arms, Cardio",difficulty:"Beginner",equipment:"Battle Ropes",cues:["Alternating waves from shoulder","Keep hips slightly hinged","Core tight don't rotate excessively","Maintain rhythm for full interval"],animation:"raise"},
-  "Deadlift":             {muscles:"Hamstrings, Glutes, Back, Traps",difficulty:"Advanced",equipment:"Barbell",cues:["Bar over mid-foot at setup","Push floor away don't pull bar","Hips and shoulders rise together","Lockout with glutes not back"],animation:"hinge"},
-  "Push-Ups":             {muscles:"Chest, Triceps, Front Delts, Core",difficulty:"Beginner",equipment:"Bodyweight",cues:["Hands slightly wider than shoulders","Body stays rigid plank position","Lower chest to 1 inch from floor","Full lockout at top"],animation:"push"},
-  "Plank":                {muscles:"Core, Shoulders, Glutes",difficulty:"Beginner",equipment:"Bodyweight",cues:["Forearms or straight arms","Hips level not sagging or high","Squeeze glutes and abs hard","Breathe steadily throughout"],animation:"plank"},
-  "Dumbbell Flyes":       {muscles:"Chest, Front Delts",difficulty:"Beginner",equipment:"Dumbbells, Bench",cues:["Slight bend in elbows throughout","Feel the stretch at the bottom","Bring dumbbells in an arc not straight up","Think hugging a barrel"],animation:"push"},
-  "Seated Row":           {muscles:"Lats, Rhomboids, Biceps, Rear Delts",difficulty:"Beginner",equipment:"Cable Machine",cues:["Sit tall don't round back","Pull to belly button","Squeeze shoulder blades together","Full stretch forward between reps"],animation:"pull"},
-  "Hip Thrust":           {muscles:"Glutes, Hamstrings",difficulty:"Beginner",equipment:"Barbell, Bench",cues:["Upper back on bench edge","Feet flat shin vertical at top","Drive through heels","Full hip extension squeeze hard at top"],animation:"hinge"},
+const THEMES = {
+  dark:     {name:"Dark",     bg:"#0a0a0a", surface:"#111",    surface2:"#161616", border:"#1c1c1c", border2:"#2a2a2a", text:"#e0e0e0", textMuted:"#888", textFaint:"#444", heroBg:"#111",    heroGrad:"#1a0f0a"},
+  light:    {name:"Light",    bg:"#f5f5f0", surface:"#ffffff",  surface2:"#f0f0ea", border:"#e0e0d8", border2:"#d0d0c8", text:"#1a1a1a", textMuted:"#666", textFaint:"#aaa", heroBg:"#ffffff", heroGrad:"#fff5f0"},
+  midnight: {name:"Midnight", bg:"#070b14", surface:"#0e1420", surface2:"#131c2e", border:"#1e2d45", border2:"#243550", text:"#d0dff0", textMuted:"#7090b0", textFaint:"#334466", heroBg:"#0e1420", heroGrad:"#0a1528"},
+  forest:   {name:"Forest",   bg:"#080e08", surface:"#0f1a0f", surface2:"#141f14", border:"#1e301e", border2:"#243824", text:"#d0e8d0", textMuted:"#70a070", textFaint:"#2a3f2a", heroBg:"#0f1a0f", heroGrad:"#0a1a0a"},
+  solarized:{name:"Solarized",bg:"#002b36", surface:"#073642", surface2:"#0d3c48", border:"#124552", border2:"#1a5060", text:"#839496", textMuted:"#586e75", textFaint:"#073642", heroBg:"#073642", heroGrad:"#002b36"},
 };
 
-const DIFF_COLOR = {Beginner:"#10B981",Intermediate:"#F59E0B",Advanced:"#FF5733"};
+const ACCENT_COLORS = [
+  {name:"Orange",  value:"#FF5733", dark:"#FF8C00"},
+  {name:"Blue",    value:"#3B82F6", dark:"#2563EB"},
+  {name:"Green",   value:"#10B981", dark:"#059669"},
+  {name:"Purple",  value:"#A855F7", dark:"#7C3AED"},
+  {name:"Pink",    value:"#EC4899", dark:"#DB2777"},
+  {name:"Teal",    value:"#14B8A6", dark:"#0D9488"},
+  {name:"Red",     value:"#EF4444", dark:"#DC2626"},
+  {name:"Amber",   value:"#F59E0B", dark:"#D97706"},
+];
+
+const FONT_PAIRS = {
+  default: {name:"Default",  display:"'Bebas Neue'", body:"'DM Sans'",    import:"family=Bebas+Neue&family=DM+Sans:wght@400;500;600"},
+  modern:  {name:"Modern",   display:"'Oswald'",     body:"'Inter'",      import:"family=Oswald:wght@400;600&family=Inter:wght@400;500;600"},
+  classic: {name:"Classic",  display:"'Playfair+Display'", body:"'Lato'", import:"family=Playfair+Display:wght@700&family=Lato:wght@400;700"},
+};
+
+const UNITS = ["g","ml","oz","cup","tbsp","tsp","serving"];
+const REST_PRESETS = [30,60,90,120,180];
+const COLORS = ["#FF5733","#3B82F6","#10B981","#F59E0B","#A855F7","#EC4899","#14B8A6","#F97316"];
+const MEALS = ["Breakfast","Lunch","Dinner","Snack","Post-Workout"];
+const API_BASE = (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) || "http://localhost:3001";
+
+const GOAL_LABELS = {cut:"Cut - Lose Fat",maintain:"Maintain - Stay Lean",bulk:"Bulk - Build Muscle",aggressiveBulk:"Aggressive Bulk"};
+const GOAL_COLORS = {cut:"#3B82F6",maintain:"#10B981",bulk:"#FF5733",aggressiveBulk:"#F59E0B"};
+const ACTIVITY_LABELS = {
+  sedentary:"Sedentary (desk job, no exercise)",
+  light:"Lightly Active (1-2x/week)",
+  moderate:"Moderately Active (3-4x/week)",
+  active:"Very Active (5-6x/week)",
+  veryActive:"Athlete (2x/day or physical job)",
+};
+
+const DEFAULT_QUICK_FOODS = [
+  {id:"qf1",name:"Chicken Breast",amount:100,unit:"g",cal:165,protein:31,carbs:0,fat:3.6},
+  {id:"qf2",name:"White Rice",amount:100,unit:"g",cal:130,protein:2.7,carbs:28,fat:0.3},
+  {id:"qf3",name:"Whole Eggs",amount:2,unit:"serving",cal:155,protein:13,carbs:1,fat:11},
+  {id:"qf4",name:"Greek Yogurt",amount:150,unit:"g",cal:90,protein:15,carbs:6,fat:0.4},
+  {id:"qf5",name:"Banana",amount:1,unit:"serving",cal:89,protein:1.1,carbs:23,fat:0.3},
+  {id:"qf6",name:"Protein Shake",amount:1,unit:"serving",cal:160,protein:30,carbs:8,fat:3},
+  {id:"qf7",name:"Almonds",amount:30,unit:"g",cal:174,protein:6,carbs:6,fat:15},
+  {id:"qf8",name:"Sweet Potato",amount:150,unit:"g",cal:130,protein:3,carbs:30,fat:0.1},
+];
+
+const FOOD_LOG_DEFAULTS = [
+  {id:1,name:"Oatmeal + Berries",meal:"Breakfast",cal:380,protein:12,carbs:68,fat:7},
+  {id:2,name:"Grilled Chicken",meal:"Lunch",cal:310,protein:55,carbs:0,fat:6},
+  {id:3,name:"Brown Rice",meal:"Lunch",cal:215,protein:5,carbs:45,fat:2},
+  {id:4,name:"Protein Shake",meal:"Post-Workout",cal:160,protein:30,carbs:8,fat:3},
+];
+
+const BARCODE_DB = {
+  "5000112548167":{name:"Heinz Baked Beans 200g",cal:162,protein:10,carbs:29,fat:0.6},
+  "7622210951311":{name:"Oreo Cookies 44g",cal:214,protein:2.2,carbs:32,fat:9},
+  "4056489098683":{name:"Whey Protein Shake 30g",cal:115,protein:22,carbs:4,fat:2},
+  "5010029007548":{name:"Quaker Oats 50g",cal:190,protein:6,carbs:34,fat:4},
+  "5000159407236":{name:"Tuna Spring Water 130g",cal:122,protein:28,carbs:0,fat:0.8},
+  "0070177154601":{name:"Quest Protein Bar 60g",cal:190,protein:21,carbs:21,fat:7},
+};
+const DEMO_BARCODES = Object.keys(BARCODE_DB);
 
 const INITIAL_WORKOUTS = [
   {id:"push",label:"PUSH",tag:"Chest, Shoulders, Tris",color:"#FF5733",exercises:[
-    {id:"e1",name:"Barbell Bench Press",sets:"4",reps:"8-10",rest:"90s",tip:"Retract scapula, drive feet into floor"},
+    {id:"e1",name:"Barbell Bench Press",sets:"4",reps:"8-10",rest:"90s",tip:"Retract scapula"},
     {id:"e2",name:"Incline Dumbbell Press",sets:"3",reps:"10-12",rest:"75s",tip:"Control the eccentric"},
     {id:"e3",name:"Cable Lateral Raise",sets:"4",reps:"15",rest:"45s",tip:"Lead with elbows"},
     {id:"e4",name:"Overhead Press",sets:"3",reps:"8-10",rest:"90s",tip:"Brace core"},
     {id:"e5",name:"Tricep Rope Pushdown",sets:"3",reps:"12-15",rest:"45s",tip:"Full extension"},
-    {id:"e6",name:"Chest Dips",sets:"3",reps:"10-12",rest:"60s",tip:"Lean forward for chest emphasis"},
   ]},
   {id:"pull",label:"PULL",tag:"Back, Biceps, Rear Delts",color:"#3B82F6",exercises:[
     {id:"e7",name:"Pull-Ups",sets:"4",reps:"6-8",rest:"90s",tip:"Full dead hang, chin over bar"},
@@ -89,88 +106,51 @@ const INITIAL_WORKOUTS = [
   ]},
 ];
 
-const FOOD_LOG_DEFAULTS = [
-  {id:1,name:"Oatmeal + Berries",meal:"Breakfast",cal:380,protein:12,carbs:68,fat:7},
-  {id:2,name:"Grilled Chicken",meal:"Lunch",cal:310,protein:55,carbs:0,fat:6},
-  {id:3,name:"Brown Rice",meal:"Lunch",cal:215,protein:5,carbs:45,fat:2},
-  {id:4,name:"Protein Shake",meal:"Post-Workout",cal:160,protein:30,carbs:8,fat:3},
+const EXERCISE_LIBRARY = [
+  "Barbell Bench Press","Incline Dumbbell Press","Cable Lateral Raise","Overhead Press",
+  "Tricep Rope Pushdown","Chest Dips","Dumbbell Flyes","Push-Ups",
+  "Pull-Ups","Barbell Row","Lat Pulldown","Cable Face Pull","Seated Row",
+  "EZ-Bar Curl","Incline Hammer Curl",
+  "Barbell Back Squat","Romanian Deadlift","Leg Press","Walking Lunges",
+  "Leg Curl","Calf Raises","Hip Thrust","Deadlift",
+  "Burpees","Jump Squats","Mountain Climbers","Kettlebell Swings",
+  "Box Jumps","Battle Ropes","Plank",
 ];
-const MEALS = ["Breakfast","Lunch","Dinner","Snack","Post-Workout"];
-const QUICK_FOODS = [
-  {name:"Chicken Breast (100g)",cal:165,protein:31,carbs:0,fat:3.6},
-  {name:"White Rice (100g)",cal:130,protein:2.7,carbs:28,fat:0.3},
-  {name:"Whole Eggs (2)",cal:155,protein:13,carbs:1,fat:11},
-  {name:"Greek Yogurt (150g)",cal:90,protein:15,carbs:6,fat:0.4},
-  {name:"Banana",cal:89,protein:1.1,carbs:23,fat:0.3},
-  {name:"Protein Shake",cal:160,protein:30,carbs:8,fat:3},
-  {name:"Almonds (30g)",cal:174,protein:6,carbs:6,fat:15},
-  {name:"Sweet Potato (150g)",cal:130,protein:3,carbs:30,fat:0.1},
-];
-const BARCODE_DB = {
-  "5000112548167":{name:"Heinz Baked Beans (200g)",cal:162,protein:10,carbs:29,fat:0.6},
-  "7622210951311":{name:"Oreo Cookies (44g)",cal:214,protein:2.2,carbs:32,fat:9},
-  "4056489098683":{name:"Whey Protein Shake (30g)",cal:115,protein:22,carbs:4,fat:2},
-  "5010029007548":{name:"Quaker Oats (50g)",cal:190,protein:6,carbs:34,fat:4},
-  "8076809513364":{name:"Barilla Pasta (100g dry)",cal:353,protein:12,carbs:70,fat:2},
-  "5000159407236":{name:"Tuna in Spring Water (130g)",cal:122,protein:28,carbs:0,fat:0.8},
-  "3017620422003":{name:"Nutella (30g)",cal:163,protein:1.9,carbs:21,fat:8.3},
-  "0070177154601":{name:"Quest Protein Bar (60g)",cal:190,protein:21,carbs:21,fat:7},
-  "5901234123457":{name:"Brown Rice (100g dry)",cal:360,protein:7,carbs:77,fat:2.7},
-  "4099100143547":{name:"Chicken Breast (150g)",cal:165,protein:36,carbs:0,fat:2},
-  "5000213932610":{name:"Wholegrain Bread (36g slice)",cal:85,protein:3.5,carbs:16,fat:0.9},
-  "8410076482549":{name:"Greek Yogurt (150g)",cal:90,protein:15,carbs:6,fat:0.4},
-  "5010166008068":{name:"Digestive Biscuit (14g)",cal:67,protein:1,carbs:9.7,fat:2.9},
-  "8000500310427":{name:"Ferrero Rocher (12.5g)",cal:73,protein:1,carbs:6.5,fat:4.9},
-  "5449000000996":{name:"Coca-Cola (330ml)",cal:139,protein:0,carbs:35,fat:0},
-};
-const DEMO_BARCODES = Object.keys(BARCODE_DB);
-const COLORS = ["#FF5733","#3B82F6","#10B981","#F59E0B","#A855F7","#EC4899","#14B8A6","#F97316"];
-const WATER_GOAL = 8;
 
-const ACTIVITY_LABELS = {
-  sedentary:"Sedentary (desk job, no exercise)",
-  light:"Lightly Active (1-2x/week)",
-  moderate:"Moderately Active (3-4x/week)",
-  active:"Very Active (5-6x/week)",
-  veryActive:"Athlete (2x/day or physical job)",
-};
-const GOAL_LABELS = {cut:"Cut - Lose Fat",maintain:"Maintain - Stay Lean",bulk:"Bulk - Build Muscle",aggressiveBulk:"Aggressive Bulk"};
-const GOAL_COLORS = {cut:"#3B82F6",maintain:"#10B981",bulk:"#FF5733",aggressiveBulk:"#F59E0B"};
 const ONBOARDING_STEPS = ["welcome","name","body","activity","goal","summary"];
 
-function calcMacros(profile) {
-  const {gender,age,weight,weightUnit,height,heightUnit,activityLevel,goal} = profile;
-  const weightKg = weightUnit==="lbs" ? weight*0.453592 : Number(weight);
-  const heightCm = heightUnit==="ft"
-    ? (Number(String(height).split(".")[0]||0)*30.48)+(Number(String(height).split(".")[1]||0)*2.54)
-    : Number(height);
-  if (!weightKg||!heightCm||!age) return {calories:2000,protein:150,carbs:200,fat:65};
-  const bmr = gender==="male" ? 10*weightKg+6.25*heightCm-5*age+5 : 10*weightKg+6.25*heightCm-5*age-161;
+function uid() { return Math.random().toString(36).slice(2,9); }
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+function calcMacros(p) {
+  const wkg = p.weightUnit==="lbs" ? p.weight*0.453592 : Number(p.weight);
+  const hcm = p.heightUnit==="ft"
+    ? (Number(String(p.height).split(".")[0]||0)*30.48)+(Number(String(p.height).split(".")[1]||0)*2.54)
+    : Number(p.height);
+  if (!wkg||!hcm||!p.age) return {calories:2000,protein:150,carbs:200,fat:65};
+  const bmr = p.gender==="male" ? 10*wkg+6.25*hcm-5*p.age+5 : 10*wkg+6.25*hcm-5*p.age-161;
   const mult = {sedentary:1.2,light:1.375,moderate:1.55,active:1.725,veryActive:1.9};
-  const tdee = Math.round(bmr*(mult[activityLevel]||1.55));
+  const tdee = Math.round(bmr*(mult[p.activityLevel]||1.55));
   const adj = {cut:-500,maintain:0,bulk:300,aggressiveBulk:500};
-  const cals = tdee+(adj[goal]||0);
-  const protein = Math.round(weightKg*(goal==="maintain"?1.8:2.0));
+  const cals = tdee+(adj[p.goal]||0);
+  const protein = Math.round(wkg*(p.goal==="maintain"?1.8:2.0));
   const fat = Math.round(cals*0.25/9);
   const carbs = Math.round((cals-protein*4-fat*9)/4);
   return {calories:cals,protein,carbs:Math.max(carbs,50),fat};
 }
 
-function uid() { return Math.random().toString(36).slice(2,9); }
-const todayStr = () => new Date().toISOString().slice(0,10);
-
 function Ring({pct,color,size=80,stroke=8,label,value,unit}) {
-  const r=(size-stroke)/2,circ=2*Math.PI*r,dash=circ*Math.min(pct,1);
+  const r=(size-stroke)/2, circ=2*Math.PI*r, dash=circ*Math.min(pct,1);
   return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
       <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e1e1e" strokeWidth={stroke}/>
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          style={{transition:"stroke-dasharray .6s cubic-bezier(.4,0,.2,1)"}}/>
+          strokeDasharray={dash+" "+circ} strokeLinecap="round"
+          style={{transition:"stroke-dasharray .6s"}}/>
       </svg>
-      <div style={{textAlign:"center",lineHeight:1.2,transform:"translateY(-4px)"}}>
-        <div style={{fontSize:"1.1rem",fontWeight:700,color:"#fff",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:".05em"}}>
+      <div style={{textAlign:"center",lineHeight:1.2}}>
+        <div style={{fontSize:"1rem",fontWeight:700,color:"#fff",fontFamily:"'Bebas Neue',sans-serif"}}>
           {value}<span style={{fontSize:".6rem",color:"#888",marginLeft:1}}>{unit}</span>
         </div>
         <div style={{fontSize:".6rem",color:"#666",letterSpacing:".1em",textTransform:"uppercase"}}>{label}</div>
@@ -180,7 +160,6 @@ function Ring({pct,color,size=80,stroke=8,label,value,unit}) {
 }
 
 function MacroBar({label,value,goal,color}) {
-  const pct=Math.min(value/goal,1);
   return (
     <div style={{marginBottom:10}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
@@ -188,7 +167,7 @@ function MacroBar({label,value,goal,color}) {
         <span style={{fontSize:".68rem",color:"#fff"}}>{value}<span style={{color:"#555"}}>/{goal}g</span></span>
       </div>
       <div style={{height:5,background:"#1a1a1a",borderRadius:99}}>
-        <div style={{height:5,width:`${pct*100}%`,background:color,borderRadius:99,transition:"width .5s ease"}}/>
+        <div style={{height:5,width:Math.min(value/goal,1)*100+"%",background:color,borderRadius:99,transition:"width .5s"}}/>
       </div>
     </div>
   );
@@ -196,211 +175,13 @@ function MacroBar({label,value,goal,color}) {
 
 function SparkLine({data}) {
   if(!data||data.length<2) return null;
-  const mn=Math.min(...data),mx=Math.max(...data),range=mx-mn||1;
-  const W=100,H=24;
-  const pts=data.map((v,i)=>`${(i/(data.length-1))*W},${H-((v-mn)/range)*H}`).join(" ");
+  const mn=Math.min(...data), mx=Math.max(...data), range=mx-mn||1;
+  const W=100, H=24;
+  const pts=data.map((v,i)=>((i/(data.length-1))*W)+","+((H-((v-mn)/range)*H))).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height="28" style={{marginTop:6,display:"block"}}>
+    <svg viewBox={"0 0 "+W+" "+H} preserveAspectRatio="none" width="100%" height="28" style={{marginTop:6,display:"block"}}>
       <polyline points={pts} fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
-  );
-}
-
-function ExerciseAnimation({type}) {
-  const b={fill:"none",strokeLinecap:"round",strokeLinejoin:"round"};
-  const f={stroke:"#FF5733",strokeWidth:2.5};
-  const a={stroke:"#FF573366",strokeWidth:1.5};
-  const A = {
-    push:(
-      <svg viewBox="0 0 120 80" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes pA{0%,100%{transform-origin:40px 30px;transform:rotate(0deg)}50%{transform-origin:40px 30px;transform:rotate(-25deg)}}.pA{animation:pA 1.6s ease-in-out infinite;}"}</style>
-        <rect x="10" y="55" width="100" height="8" rx="3" stroke="#333" strokeWidth="1.5" fill="#1a1a1a"/>
-        <line x1="20" y1="50" x2="90" y2="50" {...b} {...f}/>
-        <circle cx="95" cy="44" r="7" {...b} {...f}/>
-        <g className="pA"><line x1="40" y1="50" x2="40" y2="56" {...b} stroke="#FF5733" strokeWidth="2.5"/></g>
-        <g className="pA" style={{animationDelay:".08s"}}><line x1="65" y1="50" x2="65" y2="56" {...b} stroke="#FF5733" strokeWidth="2.5"/></g>
-      </svg>
-    ),
-    pull:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes puA{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}.puA{animation:puA 1.8s ease-in-out infinite;}"}</style>
-        <rect x="20" y="8" width="80" height="5" rx="2" stroke="#555" strokeWidth="1.5" fill="#222"/>
-        <g className="puA">
-          <line x1="60" y1="13" x2="60" y2="50" {...b} {...f}/>
-          <circle cx="60" cy="7" r="7" {...b} {...f}/>
-          <line x1="60" y1="20" x2="35" y2="13" {...b} {...f}/>
-          <line x1="60" y1="20" x2="85" y2="13" {...b} {...f}/>
-          <line x1="60" y1="50" x2="50" y2="70" {...b} {...f}/>
-          <line x1="60" y1="50" x2="70" y2="70" {...b} {...f}/>
-        </g>
-      </svg>
-    ),
-    squat:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes sqA{0%,100%{transform:translateY(0)}50%{transform:translateY(14px)}}.sqA{animation:sqA 1.8s ease-in-out infinite;}"}</style>
-        <g className="sqA">
-          <circle cx="60" cy="14" r="7" {...b} {...f}/>
-          <line x1="60" y1="21" x2="60" y2="42" {...b} {...f}/>
-          <line x1="60" y1="28" x2="45" y2="36" {...b} {...f}/>
-          <line x1="60" y1="28" x2="75" y2="36" {...b} {...f}/>
-          <line x1="60" y1="42" x2="48" y2="62" {...b} {...f}/>
-          <line x1="60" y1="42" x2="72" y2="62" {...b} {...f}/>
-          <line x1="48" y1="62" x2="44" y2="72" {...b} {...f}/>
-          <line x1="72" y1="62" x2="76" y2="72" {...b} {...f}/>
-        </g>
-        <line x1="30" y1="75" x2="90" y2="75" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    hinge:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes hiA{0%,100%{transform:rotate(0deg);transform-origin:60px 50px}50%{transform:rotate(35deg);transform-origin:60px 50px}}.hiA{animation:hiA 2s ease-in-out infinite;}"}</style>
-        <g className="hiA">
-          <circle cx="60" cy="20" r="7" {...b} {...f}/>
-          <line x1="60" y1="27" x2="60" y2="50" {...b} {...f}/>
-          <line x1="60" y1="35" x2="45" y2="42" {...b} {...f}/>
-          <line x1="60" y1="35" x2="75" y2="42" {...b} {...f}/>
-        </g>
-        <line x1="60" y1="50" x2="50" y2="72" {...b} {...f}/>
-        <line x1="60" y1="50" x2="70" y2="72" {...b} {...f}/>
-        <line x1="50" y1="72" x2="46" y2="80" {...b} {...f}/>
-        <line x1="70" y1="72" x2="74" y2="80" {...b} {...f}/>
-        <line x1="25" y1="82" x2="95" y2="82" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    curl:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes cuA{0%,100%{transform:rotate(0deg);transform-origin:55px 42px}50%{transform:rotate(-55deg);transform-origin:55px 42px}}.cuA{animation:cuA 1.6s ease-in-out infinite;}"}</style>
-        <circle cx="60" cy="12" r="7" {...b} {...f}/>
-        <line x1="60" y1="19" x2="60" y2="50" {...b} {...f}/>
-        <line x1="60" y1="30" x2="75" y2="38" {...b} {...f}/>
-        <line x1="60" y1="50" x2="50" y2="70" {...b} {...f}/>
-        <line x1="60" y1="50" x2="70" y2="70" {...b} {...f}/>
-        <line x1="50" y1="70" x2="46" y2="80" {...b} {...f}/>
-        <line x1="70" y1="70" x2="74" y2="80" {...b} {...f}/>
-        <g className="cuA">
-          <line x1="60" y1="30" x2="55" y2="42" {...b} stroke="#FF5733" strokeWidth="2.5"/>
-          <line x1="55" y1="42" x2="48" y2="48" {...b} stroke="#FF5733" strokeWidth="2.5"/>
-        </g>
-        <line x1="25" y1="82" x2="95" y2="82" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    raise:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes raA{0%,100%{transform:rotate(0deg);transform-origin:60px 32px}50%{transform:rotate(-40deg);transform-origin:60px 32px}}.raA{animation:raA 1.6s ease-in-out infinite;}"}</style>
-        <circle cx="60" cy="12" r="7" {...b} {...f}/>
-        <line x1="60" y1="19" x2="60" y2="50" {...b} {...f}/>
-        <g className="raA"><line x1="60" y1="32" x2="82" y2="40" {...b} stroke="#FF5733" strokeWidth="2.5"/></g>
-        <line x1="60" y1="32" x2="38" y2="40" {...b} {...a}/>
-        <line x1="60" y1="50" x2="50" y2="72" {...b} {...f}/>
-        <line x1="60" y1="50" x2="70" y2="72" {...b} {...f}/>
-        <line x1="50" y1="72" x2="46" y2="80" {...b} {...f}/>
-        <line x1="70" y1="72" x2="74" y2="80" {...b} {...f}/>
-        <line x1="25" y1="82" x2="95" y2="82" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    lunge:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes luA{0%,100%{transform:translateX(0)}50%{transform:translateX(10px)}}.luA{animation:luA 1.8s ease-in-out infinite;}"}</style>
-        <g className="luA">
-          <circle cx="55" cy="12" r="7" {...b} {...f}/>
-          <line x1="55" y1="19" x2="55" y2="44" {...b} {...f}/>
-          <line x1="55" y1="44" x2="42" y2="65" {...b} {...f}/>
-          <line x1="55" y1="44" x2="70" y2="60" {...b} {...f}/>
-          <line x1="42" y1="65" x2="35" y2="75" {...b} {...f}/>
-          <line x1="70" y1="60" x2="78" y2="75" {...b} {...f}/>
-        </g>
-        <line x1="20" y1="77" x2="100" y2="77" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    plank:(
-      <svg viewBox="0 0 120 70" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes plA{0%,100%{opacity:1}50%{opacity:.5}}.plA{animation:plA 1.5s ease-in-out infinite;}"}</style>
-        <circle cx="100" cy="28" r="7" {...b} {...f}/>
-        <line x1="93" y1="32" x2="15" y2="45" {...b} {...f}/>
-        <line x1="80" y1="35" x2="75" y2="50" {...b} {...f}/>
-        <line x1="35" y1="42" x2="30" y2="55" {...b} {...f}/>
-        <rect className="plA" x="45" y="37" width="25" height="6" rx="3" fill="#FF573322" stroke="#FF5733" strokeWidth="1"/>
-        <line x1="15" y1="58" x2="80" y2="58" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    burpee:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes buA{0%,100%{transform:translateY(0)}40%,60%{transform:translateY(-18px)}}.buA{animation:buA 1.6s ease-in-out infinite;}"}</style>
-        <g className="buA">
-          <circle cx="60" cy="20" r="7" {...b} {...f}/>
-          <line x1="60" y1="27" x2="60" y2="48" {...b} {...f}/>
-          <line x1="60" y1="34" x2="44" y2="28" {...b} {...f}/>
-          <line x1="60" y1="34" x2="76" y2="28" {...b} {...f}/>
-          <line x1="60" y1="48" x2="50" y2="66" {...b} {...f}/>
-          <line x1="60" y1="48" x2="70" y2="66" {...b} {...f}/>
-          <line x1="50" y1="66" x2="46" y2="74" {...b} {...f}/>
-          <line x1="70" y1="66" x2="74" y2="74" {...b} {...f}/>
-        </g>
-        <line x1="25" y1="80" x2="95" y2="80" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-    press:(
-      <svg viewBox="0 0 120 90" style={{width:"100%",height:"100%"}}>
-        <style>{"@keyframes prA{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}.prA{animation:prA 1.8s ease-in-out infinite;}"}</style>
-        <circle cx="60" cy="30" r="7" {...b} {...f}/>
-        <line x1="60" y1="37" x2="60" y2="58" {...b} {...f}/>
-        <line x1="60" y1="58" x2="50" y2="76" {...b} {...f}/>
-        <line x1="60" y1="58" x2="70" y2="76" {...b} {...f}/>
-        <g className="prA">
-          <line x1="60" y1="44" x2="36" y2="38" {...b} {...f}/>
-          <line x1="60" y1="44" x2="84" y2="38" {...b} {...f}/>
-          <rect x="28" y="34" width="16" height="4" rx="2" fill="#333" stroke="#555" strokeWidth="1"/>
-          <rect x="76" y="34" width="16" height="4" rx="2" fill="#333" stroke="#555" strokeWidth="1"/>
-        </g>
-        <line x1="25" y1="86" x2="95" y2="86" stroke="#333" strokeWidth="1.5"/>
-      </svg>
-    ),
-  };
-  return <div className="ex-anim-wrap">{A[type]||A["squat"]}</div>;
-}
-
-function VideoModal({exerciseName,onClose}) {
-  const videoId = EXERCISE_VIDEOS[exerciseName];
-  const guide   = EXERCISE_GUIDE[exerciseName];
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={e=>e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">{exerciseName}</div>
-          <button className="ghost-btn" onClick={onClose} style={{fontSize:"1.2rem",color:"#888"}}>x</button>
-        </div>
-        <div className="modal-anim-section">
-          <ExerciseAnimation type={guide?.animation||"squat"}/>
-          {guide&&(
-            <div className="modal-badges">
-              <span className="modal-badge" style={{color:DIFF_COLOR[guide.difficulty],borderColor:DIFF_COLOR[guide.difficulty]+"44",background:DIFF_COLOR[guide.difficulty]+"11"}}>{guide.difficulty}</span>
-              <span className="modal-badge">{guide.equipment}</span>
-            </div>
-          )}
-        </div>
-        {guide&&<div className="modal-section"><div className="modal-section-label">MUSCLES WORKED</div><div className="modal-muscles">{guide.muscles}</div></div>}
-        {guide&&(
-          <div className="modal-section">
-            <div className="modal-section-label">KEY CUES</div>
-            {guide.cues.map((cue,i)=>(
-              <div key={i} className="modal-cue">
-                <span className="cue-num">{i+1}</span><span>{cue}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="modal-yt-section">
-          {videoId
-            ? <button className="yt-link-btn" onClick={()=>window.open(`https://www.youtube.com/watch?v=${videoId}`,"_blank")}>
-                <span className="yt-icon">&#9654;</span>Watch on YouTube<span className="yt-arrow">&#8599;</span>
-              </button>
-            : <button className="yt-link-btn yt-search" onClick={()=>window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(exerciseName+" form tutorial")}`,"_blank")}>
-                <span className="yt-icon">?</span>Search on YouTube<span className="yt-arrow">&#8599;</span>
-              </button>
-          }
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -417,7 +198,7 @@ function OnboardingFlow({onComplete}) {
       {step>0&&step<ONBOARDING_STEPS.length-1&&(
         <div className="ob-progress">
           {ONBOARDING_STEPS.slice(1,-1).map((_,i)=>(
-            <div key={i} className={`ob-dot ${i<step?"ob-dot-done":i===step-1?"ob-dot-active":""}`}/>
+            <div key={i} className={"ob-dot"+(i<step?" ob-dot-done":i===step-1?" ob-dot-active":"")}/>
           ))}
         </div>
       )}
@@ -425,8 +206,8 @@ function OnboardingFlow({onComplete}) {
         <div className="ob-screen fade-in">
           <div className="ob-logo"><span style={{color:"#FF5733"}}>S</span>wayd</div>
           <div className="ob-welcome-tag">so what are you doing</div>
-          <div className="ob-headline">YOUR FITNESS.<br/>YOUR WAY.</div>
-          <div className="ob-body">Set up your profile and we will calculate your personalised macro targets.</div>
+          <div className="ob-headline">BUILT FOR<br/>PEOPLE WHO<br/>SHOW UP.</div>
+          <div className="ob-body">No excuses. No fluff. Just your numbers, your goals, and what you're actually doing about them. Let's set you up.</div>
           <div style={{marginTop:"auto",paddingTop:32}}><button className="ob-btn-primary" onClick={next}>GET STARTED</button></div>
         </div>
       )}
@@ -438,8 +219,8 @@ function OnboardingFlow({onComplete}) {
           <div className="ob-step-title" style={{marginTop:28}}>Biological sex</div>
           <div className="ob-option-row">
             {["male","female"].map(g=>(
-              <button key={g} className={`ob-option-btn ${form.gender===g?"ob-option-active":""}`} onClick={()=>set("gender",g)}>
-                <span>{g==="male"?"M":"F"}</span><span>{g.charAt(0).toUpperCase()+g.slice(1)}</span>
+              <button key={g} className={"ob-option-btn"+(form.gender===g?" ob-option-active":"")} onClick={()=>set("gender",g)}>
+                <span>{g==="male"?"M":"F"}</span><span style={{textTransform:"capitalize"}}>{g}</span>
               </button>
             ))}
           </div>
@@ -453,19 +234,22 @@ function OnboardingFlow({onComplete}) {
         <div className="ob-screen fade-in">
           <div className="ob-step-label">STEP 2 OF 4</div>
           <div className="ob-step-title">Body stats</div>
-          <div className="ob-field"><div className="ob-field-label">AGE</div>
+          <div className="ob-field">
+            <div className="ob-field-label">AGE</div>
             <input className="ob-input" type="number" placeholder="e.g. 28" value={form.age} onChange={e=>set("age",e.target.value)}/>
           </div>
-          <div className="ob-field"><div className="ob-field-label">WEIGHT</div>
+          <div className="ob-field">
+            <div className="ob-field-label">WEIGHT</div>
             <div style={{display:"flex",gap:8}}>
-              <input className="ob-input" type="number" placeholder={form.weightUnit==="kg"?"e.g. 80":"e.g. 176"} value={form.weight} onChange={e=>set("weight",e.target.value)} style={{flex:1}}/>
-              <div className="ob-unit-toggle">{["kg","lbs"].map(u=><button key={u} className={`ob-unit-btn ${form.weightUnit===u?"ob-unit-active":""}`} onClick={()=>set("weightUnit",u)}>{u}</button>)}</div>
+              <input className="ob-input" type="number" value={form.weight} onChange={e=>set("weight",e.target.value)} style={{flex:1}}/>
+              <div className="ob-unit-toggle">{["kg","lbs"].map(u=><button key={u} className={"ob-unit-btn"+(form.weightUnit===u?" ob-unit-active":"")} onClick={()=>set("weightUnit",u)}>{u}</button>)}</div>
             </div>
           </div>
-          <div className="ob-field"><div className="ob-field-label">HEIGHT</div>
+          <div className="ob-field">
+            <div className="ob-field-label">HEIGHT</div>
             <div style={{display:"flex",gap:8}}>
-              <input className="ob-input" type="number" placeholder={form.heightUnit==="cm"?"e.g. 178":"e.g. 5.11"} value={form.height} onChange={e=>set("height",e.target.value)} style={{flex:1}}/>
-              <div className="ob-unit-toggle">{["cm","ft"].map(u=><button key={u} className={`ob-unit-btn ${form.heightUnit===u?"ob-unit-active":""}`} onClick={()=>set("heightUnit",u)}>{u}</button>)}</div>
+              <input className="ob-input" type="number" value={form.height} onChange={e=>set("height",e.target.value)} style={{flex:1}}/>
+              <div className="ob-unit-toggle">{["cm","ft"].map(u=><button key={u} className={"ob-unit-btn"+(form.heightUnit===u?" ob-unit-active":"")} onClick={()=>set("heightUnit",u)}>{u}</button>)}</div>
             </div>
           </div>
           <div className="ob-nav-row">
@@ -480,7 +264,7 @@ function OnboardingFlow({onComplete}) {
           <div className="ob-step-title">How active are you?</div>
           <div className="ob-list">
             {Object.entries(ACTIVITY_LABELS).map(([k,v])=>(
-              <button key={k} className={`ob-list-item ${form.activityLevel===k?"ob-list-active":""}`} onClick={()=>set("activityLevel",k)}>
+              <button key={k} className={"ob-list-item"+(form.activityLevel===k?" ob-list-active":"")} onClick={()=>set("activityLevel",k)}>
                 <span style={{flex:1,textAlign:"left",fontSize:".78rem"}}>{v}</span>
                 {form.activityLevel===k&&<span style={{color:"#FF5733"}}>v</span>}
               </button>
@@ -498,8 +282,7 @@ function OnboardingFlow({onComplete}) {
           <div className="ob-step-title">What is your goal?</div>
           <div className="ob-goal-grid">
             {Object.entries(GOAL_LABELS).map(([k,v])=>(
-              <button key={k} className={`ob-goal-card ${form.goal===k?"ob-goal-active":""}`} style={{"--gc":GOAL_COLORS[k]}} onClick={()=>set("goal",k)}>
-                <div className="ob-goal-icon">{k==="cut"?"F":k==="maintain"?"B":k==="bulk"?"M":"R"}</div>
+              <button key={k} className={"ob-goal-card"+(form.goal===k?" ob-goal-active":"")} style={{"--gc":GOAL_COLORS[k]}} onClick={()=>set("goal",k)}>
                 <div className="ob-goal-label">{v}</div>
               </button>
             ))}
@@ -513,7 +296,7 @@ function OnboardingFlow({onComplete}) {
       {sn==="summary"&&(
         <div className="ob-screen fade-in">
           <div className="ob-step-label">YOUR PLAN</div>
-          <div className="ob-step-title">{form.name?`Looking good, ${form.name}.`:"Looking good."}</div>
+          <div className="ob-step-title">{form.name?"Looking good, "+form.name+".":"Looking good."}</div>
           <div className="ob-goal-pill" style={{background:GOAL_COLORS[form.goal]+"22",borderColor:GOAL_COLORS[form.goal]+"66",color:GOAL_COLORS[form.goal]}}>{GOAL_LABELS[form.goal]}</div>
           <div className="ob-macro-grid">
             {[{label:"Calories",value:macros.calories,unit:"kcal",color:"#FF5733"},{label:"Protein",value:macros.protein,unit:"g",color:"#3B82F6"},{label:"Carbs",value:macros.carbs,unit:"g",color:"#F59E0B"},{label:"Fat",value:macros.fat,unit:"g",color:"#10B981"}].map(m=>(
@@ -523,7 +306,7 @@ function OnboardingFlow({onComplete}) {
               </div>
             ))}
           </div>
-          <div className="ob-calc-note">Calculated using the Mifflin-St Jeor formula. Adjust anytime in your profile.</div>
+          <div className="ob-calc-note">Calculated using the Mifflin-St Jeor formula.</div>
           <button className="ob-btn-primary" style={{marginTop:"auto"}} onClick={()=>onComplete(form,macros)}>LETS GO</button>
         </div>
       )}
@@ -534,13 +317,13 @@ function OnboardingFlow({onComplete}) {
 function ProfilePage({profile,macroGoals,onUpdate,onBack}) {
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState(profile);
-  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const setF=(k,v)=>setForm(p=>({...p,[k]:v}));
   const preview=calcMacros(form);
   const save=()=>{onUpdate(form,calcMacros(form));setEditing(false);};
   return (
     <div className="page fade-in">
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-        <button className="ghost-btn" onClick={onBack} style={{fontSize:"1.4rem",color:"#aaa"}}>back</button>
+        <button className="ghost-btn" onClick={onBack} style={{fontSize:"1.2rem",color:"#aaa"}}>back</button>
         <div className="page-title" style={{marginBottom:0}}>MY PROFILE</div>
         <button className="add-routine-btn" style={{marginLeft:"auto"}} onClick={()=>editing?save():setEditing(true)}>{editing?"SAVE":"EDIT"}</button>
       </div>
@@ -562,48 +345,65 @@ function ProfilePage({profile,macroGoals,onUpdate,onBack}) {
       </div>
       <div className="section-label">STATS</div>
       <div className="card" style={{marginBottom:16}}>
-        {[{label:"Age",key:"age",suffix:" yrs"},{label:"Weight",key:"weight",suffix:` ${profile.weightUnit}`},{label:"Height",key:"height",suffix:` ${profile.heightUnit}`}].map(f=>(
+        {[{label:"Age",key:"age",suffix:" yrs"},{label:"Weight",key:"weight",suffix:" "+(profile.weightUnit||"kg")},{label:"Height",key:"height",suffix:" "+(profile.heightUnit||"cm")}].map(f=>(
           <div key={f.key} className="profile-stat-row">
             <span className="profile-stat-label">{f.label}</span>
-            {editing?<input className="ob-input" style={{width:100,padding:"5px 10px",textAlign:"right"}} type="number" value={form[f.key]} onChange={e=>set(f.key,e.target.value)}/>:<span className="profile-stat-val">{profile[f.key]}{f.suffix}</span>}
+            {editing?<input className="ob-input" style={{width:100,padding:"5px 10px",textAlign:"right"}} type="number" value={form[f.key]} onChange={e=>setF(f.key,e.target.value)}/>:<span className="profile-stat-val">{profile[f.key]}{f.suffix}</span>}
           </div>
         ))}
-        <div className="profile-stat-row">
-          <span className="profile-stat-label">Sex</span>
-          {editing?<div className="ob-unit-toggle">{["male","female"].map(g=><button key={g} className={`ob-unit-btn ${form.gender===g?"ob-unit-active":""}`} onClick={()=>set("gender",g)}>{g}</button>)}</div>:<span className="profile-stat-val" style={{textTransform:"capitalize"}}>{profile.gender}</span>}
-        </div>
-      </div>
-      <div className="section-label">GOAL</div>
-      <div className="card" style={{marginBottom:16}}>
-        {editing?(
-          <div className="ob-goal-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
-            {Object.entries(GOAL_LABELS).map(([k,v])=>(
-              <button key={k} className={`ob-goal-card ${form.goal===k?"ob-goal-active":""}`} style={{"--gc":GOAL_COLORS[k],padding:"10px"}} onClick={()=>set("goal",k)}>
-                <div style={{fontSize:".6rem"}}>{v}</div>
-              </button>
-            ))}
-          </div>
-        ):<span style={{fontSize:".78rem",color:GOAL_COLORS[profile.goal]}}>{GOAL_LABELS[profile.goal]}</span>}
       </div>
       {editing&&(
-        <>
-          <div className="card" style={{marginBottom:12,borderColor:"#FF573322"}}>
-            <div className="section-label" style={{marginBottom:10}}>RECALCULATED TARGETS</div>
-            <div className="ob-macro-grid">
-              {[{label:"Calories",value:preview.calories,unit:"kcal",color:"#FF5733"},{label:"Protein",value:preview.protein,unit:"g",color:"#3B82F6"},{label:"Carbs",value:preview.carbs,unit:"g",color:"#F59E0B"},{label:"Fat",value:preview.fat,unit:"g",color:"#10B981"}].map(m=>(
-                <div key={m.label} className="ob-macro-card" style={{"--mc":m.color}}>
-                  <div className="ob-macro-val">{m.value}<span className="ob-macro-unit">{m.unit}</span></div>
-                  <div className="ob-macro-label">{m.label}</div>
-                </div>
-              ))}
-            </div>
+        <div className="card" style={{marginBottom:12,borderColor:"#FF573322"}}>
+          <div className="section-label" style={{marginBottom:10}}>RECALCULATED</div>
+          <div className="ob-macro-grid">
+            {[{label:"Calories",value:preview.calories,unit:"kcal",color:"#FF5733"},{label:"Protein",value:preview.protein,unit:"g",color:"#3B82F6"},{label:"Carbs",value:preview.carbs,unit:"g",color:"#F59E0B"},{label:"Fat",value:preview.fat,unit:"g",color:"#10B981"}].map(m=>(
+              <div key={m.label} className="ob-macro-card" style={{"--mc":m.color}}>
+                <div className="ob-macro-val">{m.value}<span className="ob-macro-unit">{m.unit}</span></div>
+                <div className="ob-macro-label">{m.label}</div>
+              </div>
+            ))}
           </div>
-          <div style={{display:"flex",gap:8,marginBottom:16}}>
-            <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"11px 0",fontSize:".7rem"}} onClick={()=>{setForm(profile);setEditing(false);}}>CANCEL</button>
-            <button className="create-btn" style={{flex:2}} onClick={save}>SAVE CHANGES</button>
-          </div>
-        </>
+        </div>
       )}
+      {editing&&(
+        <div style={{display:"flex",gap:8,marginBottom:16}}>
+          <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"11px 0",fontSize:".7rem"}} onClick={()=>{setForm(profile);setEditing(false);}}>CANCEL</button>
+          <button className="create-btn" style={{flex:2}} onClick={save}>SAVE CHANGES</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MacroDonut({protein,carbs,fat,size=120}) {
+  const total=protein*4+carbs*4+fat*9||1;
+  const pPct=(protein*4/total), cPct=(carbs*4/total), fPct=(fat*9/total);
+  const r=46, circ=2*Math.PI*r;
+  const pDash=circ*pPct, cDash=circ*cPct, fDash=circ*fPct;
+  const pOffset=0, cOffset=-pDash, fOffset=-(pDash+cDash);
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:16}}>
+      <svg width={size} height={size} style={{transform:"rotate(-90deg)",flexShrink:0}}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e1e1e" strokeWidth={12}/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#3B82F6" strokeWidth={12}
+          strokeDasharray={pDash+" "+(circ-pDash)} strokeDashoffset={pOffset} strokeLinecap="butt"/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#F59E0B" strokeWidth={12}
+          strokeDasharray={cDash+" "+(circ-cDash)} strokeDashoffset={cOffset} strokeLinecap="butt"/>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#10B981" strokeWidth={12}
+          strokeDasharray={fDash+" "+(circ-fDash)} strokeDashoffset={fOffset} strokeLinecap="butt"/>
+      </svg>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {[{label:"Protein",val:protein,unit:"g",color:"#3B82F6",pct:Math.round(pPct*100)},
+          {label:"Carbs",val:carbs,unit:"g",color:"#F59E0B",pct:Math.round(cPct*100)},
+          {label:"Fat",val:fat,unit:"g",color:"#10B981",pct:Math.round(fPct*100)}].map(m=>(
+          <div key={m.label} style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:m.color,flexShrink:0}}/>
+            <span style={{fontSize:".65rem",color:"#aaa",minWidth:48}}>{m.label}</span>
+            <span style={{fontSize:".7rem",color:"#fff",fontWeight:600}}>{m.val}g</span>
+            <span style={{fontSize:".6rem",color:"#555"}}>{m.pct}%</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -639,367 +439,511 @@ export default function SwaydApp() {
   const [foodSearchResults,setFoodSearchResults]=useState([]);
   const [foodSearchLoading,setFoodSearchLoading]=useState(false);
   const [foodSearchError,setFoodSearchError]=useState(null);
-  const intervalRef=useRef(null);
-
-  const [profile,setProfile]=useState(()=>{try{const s=localStorage.getItem("swayd_profile");return s?JSON.parse(s):null;}catch{return null;}});
+  const [quickFoods,setQuickFoods]=useState(()=>{try{const s=localStorage.getItem("swayd_quickfoods");return s?JSON.parse(s):DEFAULT_QUICK_FOODS;}catch{return DEFAULT_QUICK_FOODS;}});
+  const [showQuickFoodEditor,setShowQuickFoodEditor]=useState(false);
+  const [stepLog,setStepLog]=useState(()=>{try{const s=localStorage.getItem("swayd_steps");return s?JSON.parse(s):{};} catch{return {};}});
+  const [stepGoal,setStepGoal]=useState(()=>{try{const s=localStorage.getItem("swayd_stepgoal");return s?Number(s):10000;} catch{return 10000;}});
+  const [stepInput,setStepInput]=useState("");
+  const [showStepInput,setShowStepInput]=useState(false);
+  const [editingStepGoal,setEditingStepGoal]=useState(false);
+  const [stepGoalInput,setStepGoalInput]=useState("");
+  const [swipedWorkout,setSwipedWorkout]=useState(null);
+  const [restTimer,setRestTimer]=useState(null);
+  const [setWeights,setSetWeights]=useState({});
+  const [editingWeight,setEditingWeight]=useState(null);
+  const [personalBests,setPersonalBests]=useState(()=>{try{const s=localStorage.getItem("swayd_pbs");return s?JSON.parse(s):{};} catch{return {};}});
+  const [workoutHistory,setWorkoutHistory]=useState(()=>{try{const s=localStorage.getItem("swayd_history");return s?JSON.parse(s):[];} catch{return [];}});
+  const [waterLog,setWaterLog]=useState(()=>{try{const s=localStorage.getItem("swayd_water");return s?JSON.parse(s):{};} catch{return {};}});
+  const [weightLog,setWeightLog]=useState(()=>{try{const s=localStorage.getItem("swayd_weightlog");return s?JSON.parse(s):[];} catch{return [];}});
+  const [weightInput,setWeightInput]=useState("");
+  const [showWeightInput,setShowWeightInput]=useState(false);
+  const [aiNudge,setAiNudge]=useState(()=>{try{const s=localStorage.getItem("swayd_nudge");return s?JSON.parse(s):null;}catch{return null;}});
+  const [nudgeLoading,setNudgeLoading]=useState(false);
+  const [profile,setProfile]=useState(()=>{try{const s=localStorage.getItem("swayd_profile");return s?JSON.parse(s):null;} catch{return null;}});
   const [macroGoals,setMacroGoals]=useState(()=>{try{const s=localStorage.getItem("swayd_macros");return s?JSON.parse(s):{calories:2400,protein:180,carbs:240,fat:75};}catch{return {calories:2400,protein:180,carbs:240,fat:75};}});
   const [showProfile,setShowProfile]=useState(false);
-  const saveProfile=(prof,macros)=>{setProfile(prof);setMacroGoals(macros);try{localStorage.setItem("swayd_profile",JSON.stringify(prof));localStorage.setItem("swayd_macros",JSON.stringify(macros));}catch{}};
 
-  const [customFoods,setCustomFoods]=useState(()=>{try{const s=localStorage.getItem("swayd_custom_foods");return s?JSON.parse(s):[];}catch{return [];}});
-  useEffect(()=>{try{localStorage.setItem("swayd_custom_foods",JSON.stringify(customFoods));}catch{};},[customFoods]);
-  const saveCustomFood=()=>{
-    if(!newFood.name.trim()||!newFood.cal) return;
-    setCustomFoods(p=>[...p,{id:uid(),name:newFood.name,cal:Number(newFood.cal),protein:Number(newFood.protein)||0,carbs:Number(newFood.carbs)||0,fat:Number(newFood.fat)||0}]);
-    setNewFood({name:"",cal:"",protein:"",carbs:"",fat:""});setShowCustomFoodForm(false);
+  const [themeKey,setThemeKey]=useState(()=>{try{return localStorage.getItem("swayd_theme")||"dark";}catch{return "dark";}});
+  const [accentIdx,setAccentIdx]=useState(()=>{try{return Number(localStorage.getItem("swayd_accent")||0);}catch{return 0;}});
+  const [fontKey,setFontKey]=useState(()=>{try{return localStorage.getItem("swayd_font")||"default";}catch{return "default";}});
+  useEffect(()=>{try{localStorage.setItem("swayd_theme",themeKey);}catch{};},[themeKey]);
+  useEffect(()=>{try{localStorage.setItem("swayd_accent",String(accentIdx));}catch{};},[accentIdx]);
+  useEffect(()=>{try{localStorage.setItem("swayd_font",fontKey);}catch{};},[fontKey]);
+  const theme=THEMES[themeKey]||THEMES.dark;
+  const accent=ACCENT_COLORS[accentIdx]||ACCENT_COLORS[0];
+  const fontPair=FONT_PAIRS[fontKey]||FONT_PAIRS.default;
+  const T={
+    bg:theme.bg, surface:theme.surface, surface2:theme.surface2,
+    border:theme.border, border2:theme.border2,
+    text:theme.text, muted:theme.textMuted, faint:theme.textFaint,
+    accent:accent.value, accentDark:accent.dark,
+    display:fontPair.display+",sans-serif", body:fontPair.body+",sans-serif",
+    card:{background:theme.surface,border:"1px solid "+theme.border,borderRadius:"12px",padding:"16px"},
+    input:{background:theme.surface2,border:"1px solid "+theme.border2,borderRadius:"8px",padding:"9px 12px",color:theme.text,fontFamily:fontPair.body+",sans-serif",fontSize:".8rem",outline:"none",width:"100%"},
   };
-
+  const [customFoods,setCustomFoods]=useState(()=>{try{const s=localStorage.getItem("swayd_custom_foods");return s?JSON.parse(s):[];}catch{return [];}});
   const [diary,setDiary]=useState(()=>{try{const s=localStorage.getItem("swayd_diary");if(s)return JSON.parse(s);return {[todayStr()]:FOOD_LOG_DEFAULTS};}catch{return {[todayStr()]:FOOD_LOG_DEFAULTS};}});
   const [selectedDate,setSelectedDate]=useState(todayStr());
+  const intervalRef=useRef(null);
+  const restRef=useRef(null);
+  const swipeStartX=useRef(null);
+
+  useEffect(()=>{try{localStorage.setItem("swayd_quickfoods",JSON.stringify(quickFoods));}catch{};},[quickFoods]);
+  useEffect(()=>{try{localStorage.setItem("swayd_steps",JSON.stringify(stepLog));}catch{};},[stepLog]);
+  useEffect(()=>{try{localStorage.setItem("swayd_stepgoal",String(stepGoal));}catch{};},[stepGoal]);
+  useEffect(()=>{try{localStorage.setItem("swayd_pbs",JSON.stringify(personalBests));}catch{};},[personalBests]);
+  useEffect(()=>{try{localStorage.setItem("swayd_history",JSON.stringify(workoutHistory));}catch{};},[workoutHistory]);
+  useEffect(()=>{try{localStorage.setItem("swayd_water",JSON.stringify(waterLog));}catch{};},[waterLog]);
+  useEffect(()=>{try{localStorage.setItem("swayd_weightlog",JSON.stringify(weightLog));}catch{};},[weightLog]);
+  useEffect(()=>{try{localStorage.setItem("swayd_custom_foods",JSON.stringify(customFoods));}catch{};},[customFoods]);
   useEffect(()=>{try{localStorage.setItem("swayd_diary",JSON.stringify(diary));}catch{};},[diary]);
+  useEffect(()=>{if(timerActive){intervalRef.current=setInterval(()=>setElapsed(e=>e+1),1000);}else clearInterval(intervalRef.current);return()=>clearInterval(intervalRef.current);},[timerActive]);
+  useEffect(()=>{
+    if(!restTimer){clearInterval(restRef.current);return;}
+    if(restTimer.remaining>0){restRef.current=setInterval(()=>setRestTimer(r=>r?{...r,remaining:r.remaining-1}:null),1000);}
+    else{clearInterval(restRef.current);setTimeout(()=>setRestTimer(null),900);}
+    return()=>clearInterval(restRef.current);
+  },[restTimer]);
+  useEffect(()=>{
+    if(foodTab!=="search"||!foodSearch.trim()){return;}
+    const t=setTimeout(()=>searchFood(foodSearch),520);
+    return()=>clearTimeout(t);
+  },[foodSearch,foodTab]);
+  useEffect(()=>{
+    if(!profile||!profile.name) return;
+    if(!aiNudge||aiNudge.date!==todayStr()) fetchNudge();
+  },[profile]);
+
+  const saveProfile=(prof,macros)=>{setProfile(prof);setMacroGoals(macros);try{localStorage.setItem("swayd_profile",JSON.stringify(prof));localStorage.setItem("swayd_macros",JSON.stringify(macros));}catch{}};
 
   const foodLog=diary[selectedDate]||[];
   const setFoodLog=(updater)=>setDiary(prev=>{const cur=prev[selectedDate]||[];const next=typeof updater==="function"?updater(cur):updater;return {...prev,[selectedDate]:next};});
 
   const streak=useMemo(()=>{let n=0;const d=new Date();while(true){const k=d.toISOString().slice(0,10);if(diary[k]&&diary[k].length>0){n++;d.setDate(d.getDate()-1);}else break;}return n;},[diary]);
+  const weekDays=useMemo(()=>Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));const k=d.toISOString().slice(0,10);const entries=diary[k]||[];const cal=entries.reduce((a,f)=>a+f.cal,0);return {key:k,label:["SUN","MON","TUE","WED","THU","FRI","SAT"][d.getDay()],date:d.getDate(),cal,hit:cal>=macroGoals.calories*0.85&&cal<=macroGoals.calories*1.15,logged:entries.length>0,isToday:k===todayStr()};}), [diary,macroGoals]);
+  const totals=useMemo(()=>foodLog.reduce((a,f)=>({cal:a.cal+f.cal,protein:a.protein+f.protein,carbs:a.carbs+f.carbs,fat:a.fat+f.fat}),{cal:0,protein:0,carbs:0,fat:0}),[foodLog]);
+  const todayWater=waterLog[todayStr()]||0;
+  const todaySteps=stepLog[todayStr()]||0;
+  const latestWeight=weightLog.length>0?weightLog[weightLog.length-1].weight:null;
+  const weightTrend=weightLog.length>1?weightLog[weightLog.length-1].weight-weightLog[weightLog.length-2].weight:null;
+  const todayBurn=useMemo(()=>workoutHistory.filter(h=>h.date===todayStr()).reduce((tot,h)=>{const mins=Math.round(h.duration/60);const isHIIT=(h.workoutTag||"").toLowerCase().includes("cardio")||(h.workoutTag||"").toLowerCase().includes("hiit");return tot+Math.round(mins*(isHIIT?10:7));},0),[workoutHistory]);
+  const netCalories=totals.cal-todayBurn;
+  const isToday=selectedDate===todayStr();
 
-  const weekDays=useMemo(()=>Array.from({length:7},(_,i)=>{
-    const d=new Date();d.setDate(d.getDate()-(6-i));
-    const k=d.toISOString().slice(0,10);
-    const entries=diary[k]||[];
-    const cal=entries.reduce((a,f)=>a+f.cal,0);
-    return {key:k,label:["SUN","MON","TUE","WED","THU","FRI","SAT"][d.getDay()],date:d.getDate(),cal,hit:cal>=macroGoals.calories*0.85&&cal<=macroGoals.calories*1.15,logged:entries.length>0,isToday:k===todayStr()};
-  }),[diary,macroGoals]);
+  const getLastSession=useMemo(()=>{const map={};for(const h of workoutHistory){for(const ex of (h.exercises||[])){if(!map[ex.name]){const doneSets=(ex.sets||[]).filter(s=>s.done&&s.weight);if(doneSets.length>0){const best=Math.max(...doneSets.map(s=>parseFloat(s.weight)||0));map[ex.name]={weight:best,date:h.date};}}}}return map;},[workoutHistory]);
+  const getSuggestion=(exName)=>{const last=getLastSession[exName];if(!last||!last.weight)return null;const isLower=["Barbell Back Squat","Romanian Deadlift","Leg Press","Deadlift","Hip Thrust"].includes(exName);return {lastWeight:last.weight,suggested:last.weight+(isLower?5:2.5)};};
 
   const goToPrevDay=()=>{const d=new Date(selectedDate);d.setDate(d.getDate()-1);setSelectedDate(d.toISOString().slice(0,10));setAddingFood(false);};
   const goToNextDay=()=>{const d=new Date(selectedDate);d.setDate(d.getDate()+1);const n=d.toISOString().slice(0,10);if(n<=todayStr()){setSelectedDate(n);setAddingFood(false);}};
-  const isToday=selectedDate===todayStr();
-  const friendlyDate=ds=>{
-    if(ds===todayStr()) return "TODAY";
-    const d=new Date(ds+"T12:00:00"),y=new Date();y.setDate(y.getDate()-1);
-    if(ds===y.toISOString().slice(0,10)) return "YESTERDAY";
-    return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}).toUpperCase();
-  };
-  const totals=useMemo(()=>foodLog.reduce((a,f)=>({cal:a.cal+f.cal,protein:a.protein+f.protein,carbs:a.carbs+f.carbs,fat:a.fat+f.fat}),{cal:0,protein:0,carbs:0,fat:0}),[foodLog]);
+  const friendlyDate=ds=>{if(ds===todayStr())return "TODAY";const d=new Date(ds+"T12:00:00"),y=new Date();y.setDate(y.getDate()-1);if(ds===y.toISOString().slice(0,10))return "YESTERDAY";return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}).toUpperCase();};
+  const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
 
-  useEffect(()=>{if(timerActive){intervalRef.current=setInterval(()=>setElapsed(e=>e+1),1000);}else clearInterval(intervalRef.current);return()=>clearInterval(intervalRef.current);},[timerActive]);
+  const addWater=()=>setWaterLog(p=>({...p,[todayStr()]:Math.min((p[todayStr()]||0)+1,12)}));
+  const removeWater=()=>setWaterLog(p=>({...p,[todayStr()]:Math.max((p[todayStr()]||0)-1,0)}));
+  const logSteps=()=>{const v=parseInt(stepInput);if(!v||v<0)return;setStepLog(p=>({...p,[todayStr()]:v}));setStepInput("");setShowStepInput(false);};
+  const saveStepGoal=()=>{const v=parseInt(stepGoalInput);if(!v||v<0)return;setStepGoal(v);setStepGoalInput("");setEditingStepGoal(false);};
+  const logBodyWeight=()=>{const v=parseFloat(weightInput);if(!v||v<20)return;setWeightLog(p=>{const f=p.filter(e=>e.date!==todayStr());return [...f,{date:todayStr(),weight:v}].sort((a,b)=>a.date.localeCompare(b.date)).slice(-60);});setWeightInput("");setShowWeightInput(false);};
 
   const startWorkout=w=>{setActiveWorkout(w);setCompletedSets({});setElapsed(0);setTimerActive(true);setTab("workout");};
-  const toggleSet=(ei,si)=>{const k=`${ei}-${si}`;setCompletedSets(p=>({...p,[k]:!p[k]}));};
-  const finishWorkout=()=>{setTimerActive(false);setWorkoutDone(p=>[...p,activeWorkout.id]);setActiveWorkout(null);setTab("routines");};
-  const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const toggleSetP3=(ei,si,ex)=>{const k=ei+"-"+si;const nowDone=!completedSets[k];setCompletedSets(p=>({...p,[k]:nowDone}));if(nowDone){const secs=parseInt(ex.rest)||60;setRestTimer({remaining:secs,total:secs,exName:ex.name});const w=parseFloat(setWeights[k]||0);if(w>0)setPersonalBests(p=>{const prev=p[ex.name]||0;return w>prev?{...p,[ex.name]:w}:p;});}else{setRestTimer(null);}};
+  // ── Workout completion + milestones ──────────────────────────────────────
+  const [completionData,setCompletionData]=useState(null);
+  const [earnedMilestones,setEarnedMilestones]=useState(()=>{try{const s=localStorage.getItem("swayd_milestones");return s?JSON.parse(s):[];}catch{return [];}});
+  const [newMilestone,setNewMilestone]=useState(null);
+  useEffect(()=>{try{localStorage.setItem("swayd_milestones",JSON.stringify(earnedMilestones));}catch{};},[earnedMilestones]);
+
+  const MILESTONES=[
+    {id:"first_workout",icon:"*",title:"FIRST REP",desc:"You showed up. That's the hardest part."},
+    {id:"workout_5",icon:"5",title:"FIVE DOWN",desc:"5 workouts logged. You're building something real."},
+    {id:"workout_10",icon:"10",title:"DOUBLE DIGITS",desc:"10 workouts. Most people quit at 3."},
+    {id:"workout_25",icon:"25",title:"TWENTY FIVE",desc:"25 sessions. You're not trying anymore — you're training."},
+    {id:"streak_3",icon:"3",title:"3-DAY STREAK",desc:"Three days logged. Consistency beats intensity."},
+    {id:"streak_7",icon:"7",title:"WEEK STRAIGHT",desc:"7 days. One full week. So what are you doing? This."},
+    {id:"pb_first",icon:"PB",title:"PERSONAL BEST",desc:"New PB. Wrote your name on a new number."},
+    {id:"water_goal",icon:"~",title:"HYDRATED",desc:"Hit your water goal. Most people never bother."},
+    {id:"protein_goal",icon:"P",title:"PROTEIN LOCKED",desc:"Hit your protein target. The work doesn't stop at the gym."},
+  ];
+
+  const SWAYD_MESSAGES=[
+    "so what are you doing? you just answered that.",
+    "that session is locked in. no one can take it from you.",
+    "another one done. keep showing up.",
+    "you came, you worked, you left better than you arrived.",
+    "the only bad workout is the one you didn't do. this wasn't that.",
+    "rest. eat. come back. repeat.",
+    "you're building something. it takes time. keep going.",
+  ];
+
+  const checkMilestones=(newHistory)=>{
+    const toEarn=[];
+    const total=newHistory.length;
+    if(total>=1&&!earnedMilestones.includes("first_workout")) toEarn.push("first_workout");
+    if(total>=5&&!earnedMilestones.includes("workout_5")) toEarn.push("workout_5");
+    if(total>=10&&!earnedMilestones.includes("workout_10")) toEarn.push("workout_10");
+    if(total>=25&&!earnedMilestones.includes("workout_25")) toEarn.push("workout_25");
+    if(streak>=3&&!earnedMilestones.includes("streak_3")) toEarn.push("streak_3");
+    if(streak>=7&&!earnedMilestones.includes("streak_7")) toEarn.push("streak_7");
+    if(Object.keys(personalBests).length>=1&&!earnedMilestones.includes("pb_first")) toEarn.push("pb_first");
+    if(toEarn.length>0){
+      setEarnedMilestones(p=>[...p,...toEarn]);
+      setNewMilestone(MILESTONES.find(m=>m.id===toEarn[0]));
+      setTimeout(()=>setNewMilestone(null),4000);
+    }
+  };
+
+  const finishWorkoutP3=()=>{
+    const done=Object.values(completedSets).filter(Boolean).length;
+    const totalSets=activeWorkout.exercises.reduce((a,e)=>a+(parseInt(e.sets)||3),0);
+    const volume=activeWorkout.exercises.reduce((tot,ex,ei)=>{
+      let v=0;
+      for(let si=0;si<(parseInt(ex.sets)||3);si++){
+        const k=ei+"-"+si;
+        if(completedSets[k]) v+=(parseFloat(setWeights[k]||0))*(parseInt(ex.reps)||10);
+      }
+      return tot+v;
+    },0);
+    const entry={id:uid(),workoutId:activeWorkout.id,workoutLabel:activeWorkout.label,workoutColor:activeWorkout.color,workoutTag:activeWorkout.tag,date:todayStr(),duration:elapsed,setsCompleted:done,totalSets,volume:Math.round(volume),exercises:activeWorkout.exercises.map((ex,ei)=>({name:ex.name,sets:Array.from({length:parseInt(ex.sets)||3},(_,si)=>({done:!!completedSets[ei+"-"+si],weight:setWeights[ei+"-"+si]||""}))}))}; 
+    const newHistory=[entry,...workoutHistory];
+    setWorkoutHistory(newHistory);
+    setTimerActive(false);
+    setWorkoutDone(p=>[...p,activeWorkout.id]);
+    setCompletionData({...entry,message:SWAYD_MESSAGES[Math.floor(Math.random()*SWAYD_MESSAGES.length)]});
+    checkMilestones(newHistory);
+    setRestTimer(null);setSetWeights({});
+  };
+
   const addQuickFood=f=>{setFoodLog(p=>[...p,{id:Date.now(),...f,meal:selectedMeal}]);setAddingFood(false);};
   const removeFood=id=>setFoodLog(p=>p.filter(f=>f.id!==id));
+  const copyPreviousDay=()=>{const prev=new Date(selectedDate);prev.setDate(prev.getDate()-1);const pk=prev.toISOString().slice(0,10);const pm=diary[pk]||[];if(pm.length>0)setFoodLog(p=>[...p,...pm.map(f=>({...f,id:Date.now()+Math.random()}))]);};
+  const saveCustomFood=()=>{if(!newFood.name.trim()||!newFood.cal)return;setCustomFoods(p=>[...p,{id:uid(),name:newFood.name,cal:Number(newFood.cal),protein:Number(newFood.protein)||0,carbs:Number(newFood.carbs)||0,fat:Number(newFood.fat)||0}]);setNewFood({name:"",cal:"",protein:"",carbs:"",fat:""});setShowCustomFoodForm(false);};
+
   const deleteWorkout=id=>setWorkouts(p=>p.filter(w=>w.id!==id));
   const createWorkout=()=>{if(!newWkName.trim())return;setWorkouts(p=>[...p,{id:uid(),label:newWkName.toUpperCase(),tag:newWkTag||"Custom Workout",color:newWkColor,exercises:[]}]);setNewWkName("");setNewWkTag("");setNewWkColor(COLORS[0]);setShowNewWorkout(false);};
   const removeExercise=(wid,eid)=>setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:w.exercises.filter(e=>e.id!==eid)}:w));
-  const addExerciseFromLib=(wid,name)=>{setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:[...w.exercises,{id:uid(),name,sets:"3",reps:"10-12",rest:"60s",tip:"Focus on form first"}]}:w));setAddExMode(null);setExSearch("");};
+
+  // Favourite workouts
+  const [favourites,setFavourites]=useState(()=>{try{const s=localStorage.getItem("swayd_favs");return s?JSON.parse(s):[];}catch{return [];}});
+  useEffect(()=>{try{localStorage.setItem("swayd_favs",JSON.stringify(favourites));}catch{};},[favourites]);
+  const toggleFav=(id)=>setFavourites(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+  const sortedWorkouts=useMemo(()=>[...workouts].sort((a,b)=>(favourites.includes(b.id)?1:0)-(favourites.includes(a.id)?1:0)),[workouts,favourites]);
+
+  // Reorder exercises
+  const moveExercise=(wid,idx,dir)=>setWorkouts(p=>p.map(w=>{
+    if(w.id!==wid) return w;
+    const exs=[...w.exercises];
+    const newIdx=idx+dir;
+    if(newIdx<0||newIdx>=exs.length) return w;
+    [exs[idx],exs[newIdx]]=[exs[newIdx],exs[idx]];
+    return {...w,exercises:exs};
+  }));
+
+  const dragItem=useRef(null);
+  const dragOverItem=useRef(null);
+  const dragWorkout=useRef(null);
+  const handleDragStart=(wid,idx)=>{dragItem.current=idx;dragWorkout.current=wid;};
+  const handleDragEnter=(wid,idx)=>{if(dragWorkout.current!==wid)return;dragOverItem.current=idx;};
+  const handleDragEnd=()=>{
+    if(dragItem.current===null||dragOverItem.current===null||dragItem.current===dragOverItem.current){dragItem.current=null;dragOverItem.current=null;dragWorkout.current=null;return;}
+    const wid=dragWorkout.current;
+    setWorkouts(p=>p.map(w=>{
+      if(w.id!==wid) return w;
+      const exs=[...w.exercises];
+      const dragged=exs.splice(dragItem.current,1)[0];
+      exs.splice(dragOverItem.current,0,dragged);
+      return {...w,exercises:exs};
+    }));
+    dragItem.current=null;dragOverItem.current=null;dragWorkout.current=null;
+  };
+
+  // Manual macro override
+  const [showMacroEditor,setShowMacroEditor]=useState(false);
+  const [macroInputs,setMacroInputs]=useState({calories:"",protein:"",carbs:"",fat:""});
+  const saveMacroOverride=()=>{
+    const m={
+      calories:Number(macroInputs.calories)||macroGoals.calories,
+      protein:Number(macroInputs.protein)||macroGoals.protein,
+      carbs:Number(macroInputs.carbs)||macroGoals.carbs,
+      fat:Number(macroInputs.fat)||macroGoals.fat,
+    };
+    setMacroGoals(m);
+    try{localStorage.setItem("swayd_macros",JSON.stringify(m));}catch{}
+    setShowMacroEditor(false);
+  };
+
+  // Weekly summary
+  const [showWeeklySummary,setShowWeeklySummary]=useState(false);
+  const weeklySummary=useMemo(()=>{
+    const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d.toISOString().slice(0,10);});
+    const avgCal=Math.round(days.reduce((a,k)=>{const entries=diary[k]||[];return a+entries.reduce((b,f)=>b+f.cal,0);},0)/7);
+    const avgProt=Math.round(days.reduce((a,k)=>{const entries=diary[k]||[];return a+entries.reduce((b,f)=>b+f.protein,0);},0)/7);
+    const daysLogged=days.filter(k=>(diary[k]||[]).length>0).length;
+    const workouts7=workoutHistory.filter(h=>days.includes(h.date)).length;
+    const totalVol=workoutHistory.filter(h=>days.includes(h.date)).reduce((a,h)=>a+(h.volume||0),0);
+    const avgWater=Math.round(days.reduce((a,k)=>a+(waterLog[k]||0),0)/7*10)/10;
+    const calGoalDays=days.filter(k=>{const cal=(diary[k]||[]).reduce((a,f)=>a+f.cal,0);return cal>=macroGoals.calories*0.85&&cal<=macroGoals.calories*1.15;}).length;
+    return {avgCal,avgProt,daysLogged,workouts7,totalVol,avgWater,calGoalDays};
+  },[diary,workoutHistory,waterLog,macroGoals]);
+  const addExerciseFromLib=(wid,name)=>{setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:[...w.exercises,{id:uid(),name,sets:"3",reps:"10-12",rest:"60s",tip:"Focus on form"}]}:w));setAddExMode(null);setExSearch("");};
   const addCustomExercise=wid=>{if(!customEx.name.trim())return;setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:[...w.exercises,{id:uid(),...customEx}]}:w));setCustomEx({name:"",sets:"3",reps:"10",rest:"60s",tip:""});setCustomMode(false);setAddExMode(null);};
+  const updateExRest=(wid,eid,rest)=>{setWorkouts(p=>p.map(w=>w.id===wid?{...w,exercises:w.exercises.map(e=>e.id===eid?{...e,rest}:e)}:w));setEditingRestEx(null);};
 
-  const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:3001";
-
-  const lookupBarcode=async()=>{
-    const t=scanInput.trim();
-    if(!t){
-      const bc=DEMO_BARCODES[Math.floor(Math.random()*DEMO_BARCODES.length)];
-      setScanResult({found:true,food:BARCODE_DB[bc],barcode:bc,source:"demo"});
-      return;
-    }
-    if(BARCODE_DB[t]){setScanResult({found:true,food:BARCODE_DB[t],barcode:t,source:"local"});return;}
-    setScanLoading(true);setScanResult(null);
-    try{
-      const res=await fetch(`${API_BASE}/api/food/barcode`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({barcode:t})});
-      const results=await res.json();
-      if(Array.isArray(results)&&results.length>0){
-        setScanResult({found:true,food:results[0],barcode:t,source:"ai"});
-      } else {
-        setScanResult({found:false,barcode:t});
-      }
-    }catch{
-      setScanResult({found:false,barcode:t,error:true});
-    }finally{
-      setScanLoading(false);setScanAnimating(false);
-    }
-  };
-
-  const scanBarcode=()=>{
+  const simulateScan=()=>{
     setScanAnimating(true);setScanResult(null);
-    setTimeout(()=>lookupBarcode(),900+Math.random()*400);
+    setTimeout(()=>{
+      setScanAnimating(false);
+      const t=scanInput.trim();
+      if(t&&BARCODE_DB[t]){setScanResult({found:true,food:BARCODE_DB[t],barcode:t});}
+      else if(t){setScanResult({found:false,barcode:t});}
+      else{const bc=DEMO_BARCODES[Math.floor(Math.random()*DEMO_BARCODES.length)];setScanResult({found:true,food:BARCODE_DB[bc],barcode:bc});}
+    },1200+Math.random()*400);
   };
-
   const addScannedFood=()=>{if(!scanResult?.found)return;setFoodLog(p=>[...p,{id:Date.now(),...scanResult.food,meal:selectedMeal}]);setScanResult(null);setScanInput("");setAddingFood(false);};
 
   const searchFood=async(q)=>{
     if(!q.trim()){setFoodSearchResults([]);return;}
     setFoodSearchLoading(true);setFoodSearchError(null);setFoodSearchResults([]);
     try{
-      const res=await fetch(`${API_BASE}/api/food/search`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q})});
+      const res=await fetch(API_BASE+"/api/food/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q})});
       const results=await res.json();
       if(!Array.isArray(results)||results.length===0){setFoodSearchError("No results found.");return;}
       setFoodSearchResults(results);
-    }catch{
-      setFoodSearchError("Search failed. Try again.");
-    }finally{
-      setFoodSearchLoading(false);
-    }
+    }catch{setFoodSearchError("Search failed. Try again.");}
+    finally{setFoodSearchLoading(false);}
   };
-  const filteredLib=EXERCISE_LIBRARY.filter(n=>n.toLowerCase().includes(exSearch.toLowerCase()));
-
-  // ── Phase 3: Rest timer ───────────────────────────────────────────────────
-  const [restTimer,setRestTimer]=useState(null);
-  const restRef=useRef(null);
-  useEffect(()=>{
-    if(restTimer&&restTimer.remaining>0){
-      restRef.current=setInterval(()=>setRestTimer(r=>r?{...r,remaining:r.remaining-1}:null),1000);
-    } else {
-      clearInterval(restRef.current);
-      if(restTimer&&restTimer.remaining===0) setTimeout(()=>setRestTimer(null),900);
-    }
-    return()=>clearInterval(restRef.current);
-  },[restTimer?.remaining]);
-
-  // ── Phase 3: Weight tracking ──────────────────────────────────────────────
-  const [setWeights,setSetWeights]=useState({});
-  const [editingWeight,setEditingWeight]=useState(null);
-
-  // ── Phase 3: Personal bests ───────────────────────────────────────────────
-  const [personalBests,setPersonalBests]=useState(()=>{
-    try{const s=localStorage.getItem("swayd_pbs");return s?JSON.parse(s):{};} catch{return {};}
-  });
-  useEffect(()=>{try{localStorage.setItem("swayd_pbs",JSON.stringify(personalBests));}catch{};},[personalBests]);
-
-  // ── Phase 3: Workout history ──────────────────────────────────────────────
-  const [workoutHistory,setWorkoutHistory]=useState(()=>{
-    try{const s=localStorage.getItem("swayd_history");return s?JSON.parse(s):[];} catch{return [];}
-  });
-  useEffect(()=>{try{localStorage.setItem("swayd_history",JSON.stringify(workoutHistory));}catch{};},[workoutHistory]);
-
-  // Debounced food search
-  useEffect(()=>{
-    if(foodTab!=="search") return;
-    const t=setTimeout(()=>searchFood(foodSearch),520);
-    return()=>clearTimeout(t);
-  },[foodSearch,foodTab]);
-
-  const toggleSetP3=(ei,si,ex)=>{
-    const k=`${ei}-${si}`;
-    const nowDone=!completedSets[k];
-    setCompletedSets(p=>({...p,[k]:nowDone}));
-    if(nowDone){
-      const secs=parseInt(ex.rest)||60;
-      setRestTimer({remaining:secs,total:secs,exName:ex.name});
-      const w=parseFloat(setWeights[k]||0);
-      if(w>0) setPersonalBests(p=>{const prev=p[ex.name]||0;return w>prev?{...p,[ex.name]:w}:p;});
-    } else {
-      setRestTimer(null);
-    }
-  };
-
-  const finishWorkoutP3=()=>{
-    const volume=activeWorkout.exercises.reduce((tot,ex,ei)=>{
-      let v=0;
-      for(let si=0;si<(parseInt(ex.sets)||3);si++){
-        const k=`${ei}-${si}`;
-        if(completedSets[k]) v+=(parseFloat(setWeights[k]||0))*(parseInt(ex.reps)||10);
-      }
-      return tot+v;
-    },0);
-    const done=Object.values(completedSets).filter(Boolean).length;
-    setWorkoutHistory(p=>[{
-      id:uid(),workoutId:activeWorkout.id,workoutLabel:activeWorkout.label,
-      workoutColor:activeWorkout.color,workoutTag:activeWorkout.tag,
-      date:todayStr(),duration:elapsed,setsCompleted:done,
-      totalSets:activeWorkout.exercises.reduce((a,e)=>a+(parseInt(e.sets)||3),0),
-      volume:Math.round(volume),
-      exercises:activeWorkout.exercises.map((ex,ei)=>({
-        name:ex.name,
-        sets:Array.from({length:parseInt(ex.sets)||3},(_,si)=>({done:!!completedSets[`${ei}-${si}`],weight:setWeights[`${ei}-${si}`]||""}))
-      }))
-    },...p]);
-    setTimerActive(false);setWorkoutDone(p=>[...p,activeWorkout.id]);
-    setActiveWorkout(null);setRestTimer(null);setSetWeights({});setTab("routines");
-  };
-
-  // ── Water tracking ────────────────────────────────────────────────────────
-  const [waterLog,setWaterLog]=useState(()=>{try{const s=localStorage.getItem("swayd_water");return s?JSON.parse(s):{};} catch{return {};}});
-  useEffect(()=>{try{localStorage.setItem("swayd_water",JSON.stringify(waterLog));}catch{};},[waterLog]);
-  const todayWater=waterLog[todayStr()]||0;
-  const addWater=()=>setWaterLog(p=>({...p,[todayStr()]:Math.min((p[todayStr()]||0)+1,12)}));
-  const removeWater=()=>setWaterLog(p=>({...p,[todayStr()]:Math.max((p[todayStr()]||0)-1,0)}));
-
-  // ── Body weight log ───────────────────────────────────────────────────────
-  const [weightLog,setWeightLog]=useState(()=>{try{const s=localStorage.getItem("swayd_weightlog");return s?JSON.parse(s):[];} catch{return [];}});
-  const [weightInput,setWeightInput]=useState("");
-  const [showWeightInput,setShowWeightInput]=useState(false);
-  useEffect(()=>{try{localStorage.setItem("swayd_weightlog",JSON.stringify(weightLog));}catch{};},[weightLog]);
-  const logBodyWeight=()=>{
-    const v=parseFloat(weightInput);
-    if(!v||v<20||v>500) return;
-    setWeightLog(p=>{const filtered=p.filter(e=>e.date!==todayStr());return [...filtered,{date:todayStr(),weight:v}].sort((a,b)=>a.date.localeCompare(b.date)).slice(-60);});
-    setWeightInput("");setShowWeightInput(false);
-  };
-  const latestWeight=weightLog.length>0?weightLog[weightLog.length-1].weight:null;
-  const weightTrend=useMemo(()=>{
-    if(weightLog.length<2) return null;
-    const last=weightLog[weightLog.length-1].weight;
-    const prev=weightLog[weightLog.length-2].weight;
-    return last-prev;
-  },[weightLog]);
-
-  // ── Calorie burn ──────────────────────────────────────────────────────────
-  const todayBurn=useMemo(()=>{
-    return workoutHistory.filter(h=>h.date===todayStr()).reduce((tot,h)=>{
-      const mins=Math.round(h.duration/60);
-      const isHIIT=(h.workoutTag||"").toLowerCase().includes("cardio")||(h.workoutTag||"").toLowerCase().includes("hiit");
-      return tot+Math.round(mins*(isHIIT?10:7));
-    },0);
-  },[workoutHistory]);
-  const netCalories=useMemo(()=>totals.cal-todayBurn,[totals.cal,todayBurn]);
-
-  // ── Progressive overload ─────────────────────────────────────────────────
-  const getLastSession=useMemo(()=>{
-    // Build a map: exerciseName -> {weight, reps} from most recent workout containing it
-    const map={};
-    for(const h of workoutHistory){
-      for(const ex of (h.exercises||[])){
-        if(!map[ex.name]){
-          // Find best set (highest weight) from that session
-          const doneSets=(ex.sets||[]).filter(s=>s.done&&s.weight);
-          if(doneSets.length>0){
-            const best=Math.max(...doneSets.map(s=>parseFloat(s.weight)||0));
-            map[ex.name]={weight:best,date:h.date,duration:h.duration};
-          }
-        }
-      }
-    }
-    return map;
-  },[workoutHistory]);
-
-  const getSuggestion=(exName)=>{
-    const last=getLastSession[exName];
-    if(!last||!last.weight) return null;
-    // Suggest ~2.5kg increase for upper, ~5kg for lower body exercises
-    const isLower=["Barbell Back Squat","Romanian Deadlift","Leg Press","Walking Lunges","Deadlift","Hip Thrust"].includes(exName);
-    const bump=isLower?5:2.5;
-    return {lastWeight:last.weight, suggested:last.weight+bump, date:last.date};
-  };
-
-  // ── AI Coaching nudge ────────────────────────────────────────────────────
-  const [aiNudge,setAiNudge]=useState(()=>{
-    try{const s=localStorage.getItem("swayd_nudge");return s?JSON.parse(s):null;}catch{return null;}
-  });
-  const [nudgeLoading,setNudgeLoading]=useState(false);
 
   const fetchNudge=async()=>{
     setNudgeLoading(true);
     try{
-      // Build context from real user data
-      const avgCal7=weightLog.length>0
-        ? Math.round(Object.entries(diary).slice(-7).reduce((a,[,v])=>a+v.reduce((b,f)=>b+f.cal,0),0)/Math.min(Object.keys(diary).length,7))
-        : 0;
-      const avgProtein7=Math.round(Object.entries(diary).slice(-7).reduce((a,[,v])=>a+v.reduce((b,f)=>b+f.protein,0),0)/Math.max(Object.keys(diary).length,1));
-      const workouts7=workoutHistory.filter(h=>{const d=new Date(h.date);const now=new Date();return (now-d)/(1000*60*60*24)<=7;}).length;
-      const wTrend=weightTrend;
-      const ctx=`
-User: ${profile?.name||"Athlete"}, goal: ${profile?.goal||"maintain"}, target: ${macroGoals.calories}kcal ${macroGoals.protein}g protein.
-Last 7 days avg: ${avgCal7}kcal/day, ${avgProtein7}g protein/day.
-Workouts completed last 7 days: ${workouts7}.
-Streak: ${streak} days.
-Weight trend: ${wTrend!==null?(wTrend>0?`+${wTrend.toFixed(1)}kg`:`${wTrend.toFixed(1)}kg`):"no data"}.
-Today water: ${todayWater}/${WATER_GOAL} glasses.
-      `.trim();
-      const res=await fetch(`${API_BASE}/api/nudge`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({context:ctx})
-      });
+      const avgCal=Object.values(diary).slice(-7).reduce((a,v)=>a+v.reduce((b,f)=>b+f.cal,0),0)/Math.max(Object.keys(diary).length,1);
+      const avgProt=Object.values(diary).slice(-7).reduce((a,v)=>a+v.reduce((b,f)=>b+f.protein,0),0)/Math.max(Object.keys(diary).length,1);
+      const w7=workoutHistory.filter(h=>{const d=new Date(h.date);const now=new Date();return (now-d)/(86400000)<=7;}).length;
+      const trendStr=weightTrend!==null?(weightTrend>0?"+"+weightTrend.toFixed(1)+"kg":weightTrend.toFixed(1)+"kg"):"no data";
+      const ctx="User: "+(profile?.name||"Athlete")+", goal: "+(profile?.goal||"maintain")+", target: "+macroGoals.calories+"kcal "+macroGoals.protein+"g protein. "+
+        "Last 7 days avg: "+Math.round(avgCal)+"kcal/day, "+Math.round(avgProt)+"g protein/day. "+
+        "Workouts last 7 days: "+w7+". Streak: "+streak+" days. Weight trend: "+trendStr+". Water today: "+todayWater+"/"+WATER_GOAL+" glasses.";
+      const res=await fetch(API_BASE+"/api/nudge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({context:ctx})});
       const data=await res.json();
-      const text=data.text||"";
-      const nudge={text,date:todayStr()};
+      const nudge={text:data.text||"",date:todayStr()};
       setAiNudge(nudge);
       try{localStorage.setItem("swayd_nudge",JSON.stringify(nudge));}catch{}
-    }catch{
-      setAiNudge({text:"Could not load coaching insight. Check your connection.",date:todayStr(),error:true});
-    }finally{
-      setNudgeLoading(false);
-    }
+    }catch{setAiNudge({text:"Could not load coaching insight.",date:todayStr(),error:true});}
+    finally{setNudgeLoading(false);}
   };
 
-  // Auto-fetch nudge once per day
-  useEffect(()=>{
-    if(!profile) return;
-    if(!aiNudge||aiNudge.date!==todayStr()) fetchNudge();
-  },[profile]);
-
-  const navItems=[{id:"home",icon:"H",label:"HOME"},{id:"macros",icon:"M",label:"MACROS"},{id:"routines",icon:"T",label:"TRAIN"},{id:"gear",icon:"S",label:"SWAYD"}];
+  const filteredLib=EXERCISE_LIBRARY.filter(n=>n.toLowerCase().includes(exSearch.toLowerCase()));
+  const navItems=[{id:"home",label:"HOME"},{id:"macros",label:"MACROS"},{id:"routines",label:"TRAIN"},{id:"gear",label:"SWAYD"}];
 
   return (
     <>
       <style>{CSS}</style>
-      {videoModal&&<VideoModal exerciseName={videoModal} onClose={()=>setVideoModal(null)}/>}
+      <style>{`@import url('https://fonts.googleapis.com/css2?${fontPair.import}&display=swap');`}</style>
+
+      {showWeeklySummary&&(
+        <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:9999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setShowWeeklySummary(false)}>
+          <div style={{background:T.surface,border:"1px solid "+T.border,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:430,padding:"20px 20px 40px",maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div style={{fontFamily:T.display,fontSize:"1.4rem",color:T.text,letterSpacing:".08em"}}>WEEKLY SUMMARY</div>
+              <button style={{background:"none",border:"none",color:T.muted,fontSize:"1.2rem",cursor:"pointer"}} onClick={()=>setShowWeeklySummary(false)}>x</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              {[
+                {label:"Avg Calories",value:weeklySummary.avgCal,unit:"kcal",color:T.accent},
+                {label:"Avg Protein",value:weeklySummary.avgProt,unit:"g",color:"#3B82F6"},
+                {label:"Days Logged",value:weeklySummary.daysLogged,unit:"of 7",color:"#10B981"},
+                {label:"Workouts",value:weeklySummary.workouts7,unit:"sessions",color:"#F59E0B"},
+                {label:"Goal Days",value:weeklySummary.calGoalDays,unit:"of 7",color:"#A855F7"},
+                {label:"Avg Water",value:weeklySummary.avgWater,unit:"glasses",color:"#3B82F6"},
+              ].map(s=>(
+                <div key={s.label} style={{background:T.surface2,border:"1px solid "+T.border,borderRadius:10,padding:"12px"}}>
+                  <div style={{fontSize:".58rem",color:T.muted,letterSpacing:".12em",marginBottom:4}}>{s.label.toUpperCase()}</div>
+                  <div style={{fontFamily:T.display,fontSize:"1.6rem",color:s.color,lineHeight:1}}>{s.value}<span style={{fontSize:".65rem",color:T.muted,marginLeft:3}}>{s.unit}</span></div>
+                </div>
+              ))}
+            </div>
+            <div style={{background:T.surface2,border:"1px solid "+T.border,borderRadius:10,padding:"14px"}}>
+              <div style={{fontSize:".6rem",color:T.muted,letterSpacing:".12em",marginBottom:12}}>THIS WEEK MACRO SPLIT</div>
+              <MacroDonut protein={weeklySummary.avgProt} carbs={Math.round(weeklySummary.avgCal*0.45/4)} fat={Math.round(weeklySummary.avgCal*0.25/9)}/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Milestone popup */}
+      {newMilestone&&(
+        <div style={{position:"fixed",top:24,left:"50%",transform:"translateX(-50%)",zIndex:99999,maxWidth:380,width:"90%",background:T.surface,border:"1px solid "+T.accent+"66",borderRadius:16,padding:"16px 20px",animation:"slideDown .4s ease"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:44,height:44,borderRadius:"50%",background:T.accent+"22",border:"2px solid "+T.accent,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:T.display,fontSize:"1rem",color:T.accent,flexShrink:0}}>{newMilestone.icon}</div>
+            <div>
+              <div style={{fontFamily:T.display,fontSize:"1rem",color:T.accent,letterSpacing:".1em"}}>{newMilestone.title}</div>
+              <div style={{fontSize:".72rem",color:T.muted,marginTop:2,lineHeight:1.4}}>{newMilestone.desc}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Workout completion screen */}
+      {completionData&&(
+        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:9998,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:T.body}}>
+          <div style={{textAlign:"center",marginBottom:32}}>
+            <div style={{fontFamily:T.display,fontSize:"3.5rem",color:completionData.workoutColor,letterSpacing:".08em",lineHeight:1,marginBottom:8}}>{completionData.workoutLabel}</div>
+            <div style={{fontSize:".7rem",color:T.muted,letterSpacing:".2em"}}>COMPLETE</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,width:"100%",maxWidth:360,marginBottom:32}}>
+            {[
+              {label:"TIME",value:fmt(completionData.duration)},
+              {label:"SETS",value:completionData.setsCompleted+"/"+completionData.totalSets},
+              {label:"VOLUME",value:completionData.volume>0?(completionData.volume>999?(completionData.volume/1000).toFixed(1)+"t":completionData.volume+"kg"):"--"},
+            ].map(s=>(
+              <div key={s.label} style={{background:T.surface,border:"1px solid "+T.border,borderRadius:12,padding:"16px 12px",textAlign:"center"}}>
+                <div style={{fontFamily:T.display,fontSize:"1.6rem",color:T.text,lineHeight:1}}>{s.value}</div>
+                <div style={{fontSize:".55rem",color:T.faint,letterSpacing:".15em",marginTop:4}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:T.surface,border:"1px solid "+completionData.workoutColor+"33",borderRadius:14,padding:"16px 20px",maxWidth:360,width:"100%",marginBottom:32,textAlign:"center"}}>
+            <div style={{fontSize:".6rem",color:completionData.workoutColor,letterSpacing:".2em",marginBottom:8}}>SWAYD</div>
+            <div style={{fontSize:".85rem",color:T.muted,lineHeight:1.6,fontStyle:"italic"}}>{completionData.message}</div>
+          </div>
+          {earnedMilestones.length>0&&(
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",marginBottom:28,maxWidth:360}}>
+              {earnedMilestones.slice(0,6).map(id=>{
+                const m=MILESTONES.find(x=>x.id===id);
+                return m?(
+                  <div key={id} title={m.title} style={{width:36,height:36,borderRadius:"50%",background:T.surface,border:"1px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".65rem",color:T.accent,fontFamily:T.display}}>{m.icon}</div>
+                ):null;
+              })}
+            </div>
+          )}
+          <button onClick={()=>{setCompletionData(null);setActiveWorkout(null);setTab("routines");}}
+            style={{background:"linear-gradient(135deg,"+T.accent+","+T.accentDark+")",border:"none",borderRadius:12,color:"#fff",fontFamily:T.display,fontSize:"1.1rem",letterSpacing:".15em",padding:"16px 40px",cursor:"pointer",width:"100%",maxWidth:360}}>
+            DONE
+          </button>
+        </div>
+      )}
+
       {!profile&&<OnboardingFlow onComplete={saveProfile}/>}
       {profile&&showProfile&&(
-        <div className="app">
-          <div className="app-main" style={{padding:"0 16px 16px"}}>
+        <div className="app" style={{background:T.bg,color:T.text,fontFamily:T.body}}>
+          <div className="app-main" style={{padding:"0 16px 16px",background:T.bg}}>
             <ProfilePage profile={profile} macroGoals={macroGoals} onUpdate={saveProfile} onBack={()=>setShowProfile(false)}/>
+
+            {/* BMI Card */}
+            {profile.weight&&profile.height&&(()=>{
+              const wkg=profile.weightUnit==="lbs"?profile.weight*0.453592:Number(profile.weight);
+              const hm=profile.heightUnit==="ft"?(Number(String(profile.height).split(".")[0]||0)*0.3048)+(Number(String(profile.height).split(".")[1]||0)*0.0254):Number(profile.height)/100;
+              const bmi=hm>0?Math.round((wkg/(hm*hm))*10)/10:0;
+              const bmiLabel=bmi<18.5?"Underweight":bmi<25?"Healthy":bmi<30?"Overweight":"Obese";
+              const bmiColor=bmi<18.5?"#3B82F6":bmi<25?"#10B981":bmi<30?"#F59E0B":"#EF4444";
+              const bmiPct=Math.min((bmi-10)/30,1)*100;
+              return (
+                <div style={{...T.card,marginBottom:16}}>
+                  <div style={{fontSize:".6rem",letterSpacing:".18em",color:T.muted,marginBottom:10}}>BMI</div>
+                  <div style={{display:"flex",alignItems:"flex-end",gap:12,marginBottom:10}}>
+                    <div style={{fontFamily:T.display,fontSize:"2.4rem",color:bmiColor,lineHeight:1}}>{bmi}</div>
+                    <div style={{fontSize:".8rem",color:bmiColor,marginBottom:4,fontWeight:600}}>{bmiLabel}</div>
+                  </div>
+                  <div style={{height:6,background:T.surface2,borderRadius:99,overflow:"hidden"}}>
+                    <div style={{height:6,width:bmiPct+"%",background:bmiColor,borderRadius:99}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:".58rem",color:T.faint}}>
+                    <span>Under</span><span>Healthy</span><span>Over</span><span>Obese</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Appearance */}
+            <div style={{...T.card,marginBottom:16}}>
+              <div style={{fontSize:".6rem",letterSpacing:".18em",color:T.muted,marginBottom:14}}>APPEARANCE</div>
+
+              <div style={{fontSize:".58rem",letterSpacing:".15em",color:T.faint,marginBottom:8}}>THEME</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+                {Object.entries(THEMES).map(([key,th])=>(
+                  <button key={key} onClick={()=>setThemeKey(key)}
+                    style={{background:th.surface,border:"2px solid "+(themeKey===key?T.accent:th.border),borderRadius:10,padding:"10px 12px",cursor:"pointer",textAlign:"left",transition:"border-color .2s"}}>
+                    <div style={{display:"flex",gap:6,marginBottom:6}}>
+                      {[th.bg,th.surface,th.border].map((c,i)=>(
+                        <div key={i} style={{width:14,height:14,borderRadius:"50%",background:c,border:"1px solid "+th.border2}}/>
+                      ))}
+                    </div>
+                    <div style={{fontSize:".65rem",color:themeKey===key?T.accent:th.text,fontWeight:themeKey===key?600:400}}>{th.name}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{fontSize:".58rem",letterSpacing:".15em",color:T.faint,marginBottom:8}}>ACCENT COLOUR</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                {ACCENT_COLORS.map((ac,i)=>(
+                  <button key={i} onClick={()=>setAccentIdx(i)}
+                    style={{width:30,height:30,borderRadius:"50%",background:ac.value,border:accentIdx===i?"3px solid "+T.text:"3px solid transparent",cursor:"pointer",transition:"border .2s"}}/>
+                ))}
+              </div>
+
+              <div style={{fontSize:".58rem",letterSpacing:".15em",color:T.faint,marginBottom:8}}>FONT STYLE</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {Object.entries(FONT_PAIRS).map(([key,fp])=>(
+                  <button key={key} onClick={()=>setFontKey(key)}
+                    style={{background:fontKey===key?T.accent+"22":T.surface2,border:"1px solid "+(fontKey===key?T.accent:T.border2),borderRadius:8,padding:"10px 14px",cursor:"pointer",textAlign:"left",transition:"all .2s"}}>
+                    <div style={{fontFamily:fp.display+",sans-serif",fontSize:"1.1rem",color:fontKey===key?T.accent:T.text,letterSpacing:".05em"}}>{fp.name}</div>
+                    <div style={{fontFamily:fp.body+",sans-serif",fontSize:".65rem",color:T.muted,marginTop:2}}>The quick brown fox jumps over the lazy dog</div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
       {profile&&!showProfile&&(
-        <div className="app">
-          <header className="app-header">
-            <div className="brand"><span className="brand-s">S</span>wayd</div>
-            <div className="brand-sub">so what are you doing</div>
+        <div className="app" style={{background:T.bg,color:T.text,fontFamily:T.body}}>
+          <header className="app-header" style={{background:T.bg,borderBottomColor:T.border}}>
+            <div className="brand" style={{fontFamily:T.display,color:T.text}}><span style={{color:T.accent}}>S</span>wayd</div>
+            <div className="brand-sub" style={{color:T.faint}}>so what are you doing</div>
             {timerActive
-              ? <div className="workout-timer-pill"><span className="timer-dot"/>{fmt(elapsed)}</div>
-              : <button className="profile-btn" onClick={()=>setShowProfile(true)}>{profile.name?profile.name[0].toUpperCase():"?"}</button>
+              ? <div className="workout-timer-pill" style={{background:T.accent+"22",borderColor:T.accent+"44",color:T.accent}}><span className="timer-dot" style={{background:T.accent}}/>{fmt(elapsed)}</div>
+              : <button className="profile-btn" style={{background:"linear-gradient(135deg,"+T.accent+","+T.accentDark+")"}} onClick={()=>setShowProfile(true)}>{profile.name?profile.name[0].toUpperCase():"?"}</button>
             }
           </header>
-          <main className="app-main">
+          <main className="app-main" style={{background:T.bg}}>
 
             {tab==="home"&&(
               <div className="page fade-in">
-                <div className="hero-banner">
-                  <div className="hero-eyebrow">TODAY'S MISSION</div>
-                  <div className="hero-headline">{profile?.name?<>{`LET'S GO,`}<br/>{profile.name.toUpperCase()}.</>:<>SHOW UP.<br/>PUT IN WORK.</>}</div>
-                  <div className="hero-sub">so what are you doing?</div>
-                  {streak>1&&<div className="streak-badge">&#128293; {streak} DAY STREAK</div>}
+                <div className="hero-banner" style={{background:"linear-gradient(135deg,"+theme.heroBg+" 0%,"+theme.heroGrad+" 100%)",border:"1px solid "+T.accent+"22"}}>
+                  <div className="hero-eyebrow" style={{color:T.accent}}>TODAY'S MISSION</div>
+                  <div className="hero-headline" style={{fontFamily:T.display,color:T.text}}>{profile.name?"LET'S GO, "+profile.name.toUpperCase()+".":"SHOW UP. PUT IN WORK."}</div>
+                  <div className="hero-sub" style={{color:T.muted}}>so what are you doing?</div>
+                  {streak>1&&<div className="streak-badge" style={{background:T.accent+"22",borderColor:T.accent+"44",color:T.accent}}>🔥 {streak} DAY STREAK</div>}
                 </div>
 
-                {/* AI Coaching nudge */}
-                <div className="nudge-card">
-                  <div className="nudge-header">
-                    <div className="nudge-label">AI COACH</div>
-                    <button className="nudge-refresh" onClick={fetchNudge} disabled={nudgeLoading} title="Refresh">
-                      {nudgeLoading?"...":"↺"}
-                    </button>
-                  </div>
-                  {nudgeLoading?(
-                    <div className="nudge-loading">
-                      <div className="nudge-dot"/><div className="nudge-dot"/><div className="nudge-dot"/>
+                {aiNudge&&(
+                  <div className="nudge-card">
+                    <div className="nudge-header">
+                      <div className="nudge-label">AI COACH</div>
+                      <button className="nudge-refresh" onClick={fetchNudge} disabled={nudgeLoading}>{nudgeLoading?"...":"R"}</button>
                     </div>
-                  ):(
-                    <div className="nudge-text">{aiNudge?.text||"Analysing your data..."}</div>
-                  )}
+                    {nudgeLoading?<div className="nudge-loading"><div className="nudge-dot"/><div className="nudge-dot"/><div className="nudge-dot"/></div>:<div className="nudge-text">{aiNudge.text||"Analysing your data..."}</div>}
+                  </div>
+                )}
+
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div className="section-label" style={{marginBottom:0}}>THIS WEEK</div>
+                  <button onClick={()=>setShowWeeklySummary(true)} style={{background:T.accent+"22",border:"1px solid "+T.accent+"44",borderRadius:"7px",color:T.accent,fontSize:".58rem",letterSpacing:".1em",padding:"4px 10px",cursor:"pointer",fontFamily:T.body}}>SUMMARY</button>
                 </div>
-                <div className="section-label">THIS WEEK</div>
                 <div className="week-strip">
                   {weekDays.map(d=>(
-                    <button key={d.key} className={`week-day ${selectedDate===d.key?"week-day-selected":""} ${d.isToday?"week-day-today":""}`} onClick={()=>{setSelectedDate(d.key);setTab("macros");}}>
+                    <button key={d.key} className={"week-day"+(selectedDate===d.key?" week-day-selected":"")+(d.isToday?" week-day-today":"")} onClick={()=>{setSelectedDate(d.key);setTab("macros");}}>
                       <div className="wd-label">{d.label}</div>
                       <div className="wd-num">{d.date}</div>
-                      <div className={`wd-dot ${d.logged?(d.hit?"wd-dot-hit":"wd-dot-partial"):"wd-dot-empty"}`}/>
+                      <div className={"wd-dot"+(d.logged?(d.hit?" wd-dot-hit":" wd-dot-partial"):" wd-dot-empty")}/>
                     </button>
                   ))}
                 </div>
 
-                {/* Calories + burn row */}
                 <div className="home-stats-row">
                   <div className="card home-stat-card">
                     <div style={{fontSize:".55rem",letterSpacing:".18em",color:"#555",marginBottom:4}}>EATEN</div>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.6rem",color:"#fff",lineHeight:1}}>{totals.cal}<span style={{fontSize:".65rem",color:"#555",marginLeft:3}}>kcal</span></div>
                     <div style={{height:3,background:"#1a1a1a",borderRadius:99,marginTop:8}}>
-                      <div style={{height:3,width:`${Math.min(totals.cal/macroGoals.calories*100,100)}%`,background:totals.cal>macroGoals.calories?"#ff3b3b":"#FF5733",borderRadius:99,transition:"width .5s"}}/>
+                      <div style={{height:3,width:Math.min(totals.cal/macroGoals.calories,1)*100+"%",background:totals.cal>macroGoals.calories?"#ff3b3b":"#FF5733",borderRadius:99}}/>
                     </div>
                     <div style={{fontSize:".55rem",color:"#444",marginTop:4}}>{macroGoals.calories} goal</div>
                   </div>
@@ -1007,32 +951,29 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                     <div style={{fontSize:".55rem",letterSpacing:".18em",color:"#555",marginBottom:4}}>BURNED</div>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.6rem",color:todayBurn>0?"#FF5733":"#333",lineHeight:1}}>{todayBurn}<span style={{fontSize:".65rem",color:"#555",marginLeft:3}}>kcal</span></div>
                     <div style={{height:3,background:"#1a1a1a",borderRadius:99,marginTop:8}}>
-                      <div style={{height:3,width:`${Math.min(todayBurn/500*100,100)}%`,background:"#FF5733",borderRadius:99,transition:"width .5s"}}/>
+                      <div style={{height:3,width:Math.min(todayBurn/500,1)*100+"%",background:"#FF5733",borderRadius:99}}/>
                     </div>
                     <div style={{fontSize:".55rem",color:"#444",marginTop:4}}>from workouts</div>
                   </div>
                   <div className="card home-stat-card" style={{borderColor:netCalories<0?"#10B98133":"#1c1c1c"}}>
                     <div style={{fontSize:".55rem",letterSpacing:".18em",color:"#555",marginBottom:4}}>NET</div>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.6rem",color:netCalories<0?"#10B981":"#fff",lineHeight:1}}>{netCalories}<span style={{fontSize:".65rem",color:"#555",marginLeft:3}}>kcal</span></div>
-                    <div style={{height:3,background:"#1a1a1a",borderRadius:99,marginTop:8,overflow:"hidden"}}>
-                      <div style={{height:3,width:`${Math.min(Math.abs(netCalories)/macroGoals.calories*100,100)}%`,background:netCalories<0?"#10B981":"#FF5733",borderRadius:99,transition:"width .5s"}}/>
+                    <div style={{height:3,background:"#1a1a1a",borderRadius:99,marginTop:8}}>
+                      <div style={{height:3,width:Math.min(Math.abs(netCalories)/macroGoals.calories,1)*100+"%",background:netCalories<0?"#10B981":"#FF5733",borderRadius:99}}/>
                     </div>
                     <div style={{fontSize:".55rem",color:"#444",marginTop:4}}>eaten - burned</div>
                   </div>
                 </div>
 
-                {/* Macro rings */}
                 <div className="section-label">MACROS</div>
                 <div className="card"><div className="rings-row">
-                  <Ring pct={totals.cal/macroGoals.calories}    color="#FF5733" size={84} stroke={8} label="Calories" value={totals.cal}    unit="kcal"/>
-                  <Ring pct={totals.protein/macroGoals.protein} color="#3B82F6" size={84} stroke={8} label="Protein"  value={totals.protein} unit="g"/>
-                  <Ring pct={totals.carbs/macroGoals.carbs}     color="#F59E0B" size={84} stroke={8} label="Carbs"    value={totals.carbs}   unit="g"/>
-                  <Ring pct={totals.fat/macroGoals.fat}         color="#10B981" size={84} stroke={8} label="Fat"      value={totals.fat}     unit="g"/>
+                  <Ring pct={totals.cal/macroGoals.calories} color="#FF5733" size={84} stroke={8} label="Calories" value={totals.cal} unit="kcal"/>
+                  <Ring pct={totals.protein/macroGoals.protein} color="#3B82F6" size={84} stroke={8} label="Protein" value={totals.protein} unit="g"/>
+                  <Ring pct={totals.carbs/macroGoals.carbs} color="#F59E0B" size={84} stroke={8} label="Carbs" value={totals.carbs} unit="g"/>
+                  <Ring pct={totals.fat/macroGoals.fat} color="#10B981" size={84} stroke={8} label="Fat" value={totals.fat} unit="g"/>
                 </div></div>
 
-                {/* Water + Bodyweight row */}
                 <div className="home-stats-row" style={{marginTop:12}}>
-                  {/* Water */}
                   <div className="card" style={{flex:1.6}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                       <div style={{fontSize:".6rem",letterSpacing:".18em",color:"#555"}}>HYDRATION</div>
@@ -1040,16 +981,14 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                     </div>
                     <div className="water-glasses">
                       {Array.from({length:WATER_GOAL}).map((_,i)=>(
-                        <div key={i} className={`water-glass ${i<todayWater?"water-glass-full":""}`}/>
+                        <div key={i} className={"water-glass"+(i<todayWater?" water-glass-full":"")}/>
                       ))}
                     </div>
                     <div style={{display:"flex",gap:6,marginTop:10}}>
-                      <button className="water-btn" onClick={removeWater} disabled={todayWater===0}>−</button>
+                      <button className="water-btn" onClick={removeWater} disabled={todayWater===0}>-</button>
                       <button className="water-btn water-btn-add" onClick={addWater}>+ Glass</button>
                     </div>
                   </div>
-
-                  {/* Body weight */}
                   <div className="card" style={{flex:1}}>
                     <div style={{fontSize:".6rem",letterSpacing:".18em",color:"#555",marginBottom:8}}>BODY WEIGHT</div>
                     {showWeightInput?(
@@ -1069,15 +1008,43 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                         <button className="add-ex-trigger" style={{marginTop:4,padding:"7px 0"}} onClick={()=>setShowWeightInput(true)}>+ LOG</button>
                       </>
                     )}
-                    {/* Mini sparkline */}
-                    {weightLog.length>1&&!showWeightInput&&(
-                      <SparkLine data={weightLog.slice(-14).map(e=>e.weight)}/>
-                    )}
+                    {weightLog.length>1&&!showWeightInput&&<SparkLine data={weightLog.slice(-14).map(e=>e.weight)}/>}
                   </div>
                 </div>
 
-                {/* Quick start */}
-                <div className="section-label" style={{marginTop:16}}>QUICK START</div>
+                <div className="card" style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontSize:".6rem",letterSpacing:".18em",color:"#555"}}>STEPS TODAY</div>
+                    {editingStepGoal?(
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <input className="form-input" style={{width:80,padding:"4px 8px",fontSize:".75rem"}} type="number" placeholder="goal" value={stepGoalInput} onChange={e=>setStepGoalInput(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter")saveStepGoal();}}/>
+                        <button className="create-btn" style={{marginTop:0,padding:"4px 12px",fontSize:".7rem",width:"auto"}} onClick={saveStepGoal}>SET</button>
+                        <button className="ghost-btn" onClick={()=>setEditingStepGoal(false)}>x</button>
+                      </div>
+                    ):(
+                      <button className="add-ex-trigger" style={{padding:"3px 8px",marginTop:0,width:"auto",fontSize:".58rem"}} onClick={()=>{setEditingStepGoal(true);setStepGoalInput(String(stepGoal));}}>GOAL: {stepGoal.toLocaleString()}</button>
+                    )}
+                  </div>
+                  <div style={{display:"flex",alignItems:"flex-end",gap:12,marginBottom:10}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"2.2rem",color:todaySteps>=stepGoal?"#10B981":"#fff",lineHeight:1}}>{todaySteps.toLocaleString()}</div>
+                    <div style={{fontSize:".65rem",color:"#555",marginBottom:6}}>of {stepGoal.toLocaleString()}</div>
+                    {todaySteps>=stepGoal&&<div style={{fontSize:".65rem",color:"#10B981",marginBottom:6}}>GOAL MET</div>}
+                  </div>
+                  <div style={{height:4,background:"#1a1a1a",borderRadius:99,marginBottom:10}}>
+                    <div style={{height:4,width:Math.min(todaySteps/stepGoal,1)*100+"%",background:todaySteps>=stepGoal?"#10B981":"#3B82F6",borderRadius:99}}/>
+                  </div>
+                  {showStepInput?(
+                    <div style={{display:"flex",gap:8}}>
+                      <input className="form-input" style={{flex:1,padding:"7px 10px"}} type="number" placeholder="Enter steps" value={stepInput} onChange={e=>setStepInput(e.target.value)} autoFocus onKeyDown={e=>{if(e.key==="Enter")logSteps();}}/>
+                      <button className="create-btn" style={{marginTop:0,padding:"7px 16px",width:"auto"}} onClick={logSteps}>SAVE</button>
+                      <button className="ghost-btn" style={{border:"1px solid #2a2a2a",borderRadius:7,padding:"7px 10px"}} onClick={()=>{setShowStepInput(false);setStepInput("");}}>x</button>
+                    </div>
+                  ):(
+                    <button className="add-ex-trigger" style={{marginTop:0,padding:"8px 0"}} onClick={()=>setShowStepInput(true)}>+ LOG STEPS</button>
+                  )}
+                </div>
+
+                <div className="section-label">QUICK START</div>
                 <div className="quick-grid">
                   {workouts.map(w=>(
                     <button key={w.id} className="quick-card" style={{"--wc":w.color}} onClick={()=>startWorkout(w)}>
@@ -1087,7 +1054,7 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                     </button>
                   ))}
                 </div>
-                <div className="motivational"><span className="mot-brand">SWAYD</span> — built for those who move with purpose.</div>
+                <div className="motivational"><span className="mot-brand">SWAYD</span> - built for those who move with purpose.</div>
               </div>
             )}
 
@@ -1095,20 +1062,49 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
               <div className="page fade-in">
                 <div className="page-title">MACRO TRACKER</div>
                 <div className="date-nav">
-                  <button className="date-nav-btn" onClick={goToPrevDay}>&#8249;</button>
+                  <button className="date-nav-btn" onClick={goToPrevDay}>{"<<"}</button>
                   <div className="date-nav-label">
                     <div className="date-nav-main">{friendlyDate(selectedDate)}</div>
                     {!isToday&&<div className="date-nav-sub">{selectedDate}</div>}
                   </div>
-                  <button className="date-nav-btn" onClick={goToNextDay} disabled={isToday} style={{opacity:isToday?0.3:1}}>&#8250;</button>
+                  <button className="date-nav-btn" onClick={goToNextDay} disabled={isToday} style={{opacity:isToday?0.3:1}}>{">>"}</button>
                 </div>
                 <div className="card" style={{marginBottom:16}}>
-                  <MacroBar label="Calories" value={totals.cal}     goal={macroGoals.calories} color="#FF5733"/>
-                  <MacroBar label="Protein"  value={totals.protein} goal={macroGoals.protein}  color="#3B82F6"/>
-                  <MacroBar label="Carbs"    value={totals.carbs}   goal={macroGoals.carbs}    color="#F59E0B"/>
-                  <MacroBar label="Fat"      value={totals.fat}     goal={macroGoals.fat}      color="#10B981"/>
-                  <div style={{textAlign:"center",marginTop:12,fontSize:".65rem",color:"#555",letterSpacing:".1em"}}>REMAINING: {Math.max(0,macroGoals.calories-totals.cal)} kcal</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{fontSize:".6rem",letterSpacing:".18em",color:T.muted}}>TODAY'S SPLIT</div>
+                    <button onClick={()=>{setShowMacroEditor(v=>!v);setMacroInputs({calories:String(macroGoals.calories),protein:String(macroGoals.protein),carbs:String(macroGoals.carbs),fat:String(macroGoals.fat)});}}
+                      style={{background:showMacroEditor?T.accent+"22":"transparent",border:"1px solid "+T.accent+"44",borderRadius:"7px",color:T.accent,fontSize:".58rem",letterSpacing:".1em",padding:"4px 10px",cursor:"pointer",fontFamily:T.body}}>
+                      {showMacroEditor?"CANCEL":"EDIT TARGETS"}
+                    </button>
+                  </div>
+                  {showMacroEditor?(
+                    <div>
+                      <div style={{fontSize:".6rem",color:T.muted,marginBottom:10}}>Set your own targets manually.</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                        {[{k:"calories",label:"CALORIES"},{k:"protein",label:"PROTEIN (g)"},{k:"carbs",label:"CARBS (g)"},{k:"fat",label:"FAT (g)"}].map(f=>(
+                          <div key={f.k}>
+                            <div className="form-label">{f.label}</div>
+                            <input className="form-input" style={{padding:"7px 10px"}} type="number" value={macroInputs[f.k]} onChange={e=>setMacroInputs(p=>({...p,[f.k]:e.target.value}))}/>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="create-btn" style={{marginTop:0}} onClick={saveMacroOverride}>SAVE TARGETS</button>
+                    </div>
+                  ):(
+                    totals.protein>0||totals.carbs>0||totals.fat>0
+                      ? <MacroDonut protein={totals.protein} carbs={totals.carbs} fat={totals.fat}/>
+                      : <div style={{textAlign:"center",padding:"8px 0",fontSize:".7rem",color:T.faint}}>Log food to see your split</div>
+                  )}
                 </div>
+
+                <div className="card" style={{marginBottom:16}}>
+                  <MacroBar label="Calories" value={totals.cal} goal={macroGoals.calories} color="#FF5733"/>
+                  <MacroBar label="Protein" value={totals.protein} goal={macroGoals.protein} color="#3B82F6"/>
+                  <MacroBar label="Carbs" value={totals.carbs} goal={macroGoals.carbs} color="#F59E0B"/>
+                  <MacroBar label="Fat" value={totals.fat} goal={macroGoals.fat} color="#10B981"/>
+                  <div style={{textAlign:"center",marginTop:12,fontSize:".65rem",color:"#555"}}>REMAINING: {Math.max(0,macroGoals.calories-totals.cal)} kcal</div>
+                </div>
+
                 {addingFood?(
                   <div className="card" style={{marginBottom:16}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -1116,67 +1112,97 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                       <button className="ghost-btn" onClick={()=>{setAddingFood(false);setScanResult(null);setScanInput("");}}>x</button>
                     </div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-                      {MEALS.map(m=><button key={m} className={`meal-chip ${selectedMeal===m?"meal-chip-active":""}`} onClick={()=>setSelectedMeal(m)}>{m}</button>)}
+                      {MEALS.map(m=><button key={m} className={"meal-chip"+(selectedMeal===m?" meal-chip-active":"")} onClick={()=>setSelectedMeal(m)}>{m}</button>)}
                     </div>
                     <div style={{display:"flex",gap:6,marginBottom:14}}>
                       {[["quick","QUICK"],["search","SEARCH"],["custom","MY FOODS"],["barcode","SCAN"]].map(([k,l])=>(
-                        <button key={k} className={`food-mode-tab ${foodTab===k?"food-mode-active":""}`} onClick={()=>{setFoodTab(k);setScanResult(null);setFoodSearchResults([]);}}>{l}</button>
+                        <button key={k} className={"food-mode-tab"+(foodTab===k?" food-mode-active":"")} onClick={()=>{setFoodTab(k);setScanResult(null);setFoodSearchResults([]);}}>{l}</button>
                       ))}
                     </div>
+
+                    {foodTab==="quick"&&(
+                      <div>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                          <div style={{fontSize:".65rem",color:"#555",letterSpacing:".1em"}}>
+                            {showQuickFoodEditor?"EDITING QUICK FOODS":"TAP ANY FOOD TO ADD"}
+                          </div>
+                          <button
+                            onClick={()=>setShowQuickFoodEditor(v=>!v)}
+                            style={{background:showQuickFoodEditor?"#FF5733":"transparent",border:"1px solid #FF573366",borderRadius:"7px",color:showQuickFoodEditor?"#fff":"#FF5733",fontSize:".65rem",letterSpacing:".1em",padding:"5px 12px",cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+                            {showQuickFoodEditor?"DONE EDITING":"EDIT FOODS"}
+                          </button>
+                        </div>
+                        {showQuickFoodEditor?(
+                          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                            <div style={{fontSize:".6rem",color:"#555",letterSpacing:".08em",marginBottom:2}}>Edit name, amount, unit and macros for each food slot.</div>
+                            {quickFoods.map((f,i)=>(
+                              <div key={f.id} style={{background:"#161616",border:"1px solid #2a2a2a",borderRadius:10,padding:"12px"}}>
+                                <div style={{fontSize:".65rem",color:"#FF5733",letterSpacing:".1em",marginBottom:8}}>SLOT {i+1}</div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                                  <div style={{gridColumn:"1/-1"}}><div className="form-label">FOOD NAME</div><input className="form-input" style={{padding:"6px 10px"}} value={f.name} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/></div>
+                                  <div>
+                                    <div className="form-label">AMOUNT</div>
+                                    <input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.amount} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,amount:Number(e.target.value)}:x))}/>
+                                  </div>
+                                  <div>
+                                    <div className="form-label">UNIT</div>
+                                    <select className="form-input" style={{padding:"6px 10px"}} value={f.unit} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,unit:e.target.value}:x))}>
+                                      {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+                                    </select>
+                                  </div>
+                                  <div><div className="form-label">CALORIES</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.cal} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,cal:Number(e.target.value)}:x))}/></div>
+                                  <div><div className="form-label">PROTEIN (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.protein} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,protein:Number(e.target.value)}:x))}/></div>
+                                  <div><div className="form-label">CARBS (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.carbs} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,carbs:Number(e.target.value)}:x))}/></div>
+                                  <div><div className="form-label">FAT (g)</div><input className="form-input" style={{padding:"6px 10px"}} type="number" value={f.fat} onChange={e=>setQuickFoods(p=>p.map((x,j)=>j===i?{...x,fat:Number(e.target.value)}:x))}/></div>
+                                </div>
+                              </div>
+                            ))}
+                            <button className="ghost-btn" style={{fontSize:".62rem",color:"#444",padding:"8px 0",letterSpacing:".1em"}} onClick={()=>setQuickFoods(DEFAULT_QUICK_FOODS)}>RESET TO DEFAULTS</button>
+                          </div>
+                        ):(
+                          <div className="food-pick-grid">
+                            {quickFoods.map(f=>(
+                              <button key={f.id} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
+                                <div className="fpb-name">{f.name}</div>
+                                <div style={{fontSize:".58rem",color:"#555",marginBottom:3}}>{f.amount}{f.unit}</div>
+                                <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {foodTab==="search"&&(
                       <div>
                         <div style={{position:"relative",marginBottom:10}}>
-                          <input
-                            className="form-input"
-                            placeholder="Search any food, e.g. Greek yogurt..."
-                            value={foodSearch}
-                            onChange={e=>setFoodSearch(e.target.value)}
-                            autoFocus
-                          />
-                          {foodSearchLoading&&<div style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:".65rem",color:"#FF5733",letterSpacing:".1em"}}>...</div>}
+                          <input className="form-input" placeholder="Search any food..." value={foodSearch} onChange={e=>setFoodSearch(e.target.value)} autoFocus/>
+                          {foodSearchLoading&&<div style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:".65rem",color:"#FF5733"}}>...</div>}
                         </div>
                         {foodSearchError&&<div style={{textAlign:"center",padding:"12px 0",fontSize:".7rem",color:"#555"}}>{foodSearchError}</div>}
-                        {!foodSearch.trim()&&!foodSearchLoading&&(
-                          <div style={{textAlign:"center",padding:"16px 0",color:"#444",fontSize:".72rem",lineHeight:1.8}}>
-                            Search any food or ingredient<br/>
-                            <span style={{fontSize:".62rem",color:"#333"}}>AI-powered nutrition lookup</span>
-                          </div>
-                        )}
+                        {!foodSearch.trim()&&<div style={{textAlign:"center",padding:"16px 0",color:"#444",fontSize:".72rem"}}>Search any food<br/><span style={{fontSize:".62rem",color:"#333"}}>AI-powered nutrition lookup</span></div>}
                         <div className="food-pick-grid">
                           {foodSearchResults.map((f,i)=>(
                             <button key={i} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
                               <div className="fpb-name">{f.name}</div>
-                              <div className="fpb-macros">
-                                <span style={{color:"#FF5733"}}>{f.cal}kcal</span>
-                                <span style={{color:"#3B82F6"}}>{f.protein}p</span>
-                                <span style={{color:"#F59E0B"}}>{f.carbs}c</span>
-                              </div>
+                              <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
                             </button>
                           ))}
                         </div>
                       </div>
                     )}
-                    {foodTab==="quick"&&(
-                      <div className="food-pick-grid">
-                        {QUICK_FOODS.map(f=>(
-                          <button key={f.name} className="food-pick-btn" onClick={()=>addQuickFood(f)}>
-                            <div className="fpb-name">{f.name}</div>
-                            <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span> <span style={{color:"#F59E0B"}}>{f.carbs}c</span></div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+
                     {foodTab==="custom"&&(
                       <div>
                         {!showCustomFoodForm?(
                           <>
-                            {customFoods.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#444",fontSize:".75rem",lineHeight:1.8}}>No saved foods yet.</div>}
+                            {customFoods.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#444",fontSize:".75rem"}}>No saved foods yet.</div>}
                             <div className="food-pick-grid" style={{marginBottom:10}}>
                               {customFoods.map(f=>(
                                 <div key={f.id} style={{position:"relative"}}>
                                   <button className="food-pick-btn" style={{width:"100%"}} onClick={()=>addQuickFood(f)}>
                                     <div className="fpb-name">{f.name}</div>
-                                    <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span> <span style={{color:"#3B82F6"}}>{f.protein}p</span></div>
+                                    <div className="fpb-macros"><span style={{color:"#FF5733"}}>{f.cal}kcal</span></div>
                                   </button>
                                   <button className="custom-food-del" onClick={()=>setCustomFoods(p=>p.filter(x=>x.id!==f.id))}>x</button>
                                 </div>
@@ -1189,12 +1215,12 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                             <div className="form-label">FOOD NAME</div>
                             <input className="form-input" placeholder="e.g. My Protein Bowl" value={newFood.name} onChange={e=>setNewFood(p=>({...p,name:e.target.value}))}/>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,margin:"8px 0"}}>
-                              <div><div className="form-label">CALORIES</div><input className="form-input" type="number" placeholder="kcal" value={newFood.cal} onChange={e=>setNewFood(p=>({...p,cal:e.target.value}))}/></div>
-                              <div><div className="form-label">PROTEIN (g)</div><input className="form-input" type="number" placeholder="g" value={newFood.protein} onChange={e=>setNewFood(p=>({...p,protein:e.target.value}))}/></div>
-                              <div><div className="form-label">CARBS (g)</div><input className="form-input" type="number" placeholder="g" value={newFood.carbs} onChange={e=>setNewFood(p=>({...p,carbs:e.target.value}))}/></div>
-                              <div><div className="form-label">FAT (g)</div><input className="form-input" type="number" placeholder="g" value={newFood.fat} onChange={e=>setNewFood(p=>({...p,fat:e.target.value}))}/></div>
+                              <div><div className="form-label">CALORIES</div><input className="form-input" type="number" value={newFood.cal} onChange={e=>setNewFood(p=>({...p,cal:e.target.value}))}/></div>
+                              <div><div className="form-label">PROTEIN</div><input className="form-input" type="number" value={newFood.protein} onChange={e=>setNewFood(p=>({...p,protein:e.target.value}))}/></div>
+                              <div><div className="form-label">CARBS</div><input className="form-input" type="number" value={newFood.carbs} onChange={e=>setNewFood(p=>({...p,carbs:e.target.value}))}/></div>
+                              <div><div className="form-label">FAT</div><input className="form-input" type="number" value={newFood.fat} onChange={e=>setNewFood(p=>({...p,fat:e.target.value}))}/></div>
                             </div>
-                            <div style={{display:"flex",gap:8,marginTop:4}}>
+                            <div style={{display:"flex",gap:8}}>
                               <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"9px 0",fontSize:".7rem"}} onClick={()=>setShowCustomFoodForm(false)}>CANCEL</button>
                               <button className="create-btn" style={{flex:2,marginTop:0}} onClick={saveCustomFood}>SAVE FOOD</button>
                             </div>
@@ -1202,60 +1228,57 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                         )}
                       </div>
                     )}
+
                     {foodTab==="barcode"&&(
                       <div className="barcode-section">
                         <div className="scanner-viewport">
-                          <div className={`scanner-frame ${scanAnimating?"scanner-active":""}`}>
+                          <div className={"scanner-frame"+(scanAnimating?" scanner-active":"")}>
                             <div className="scanner-corner tl"/><div className="scanner-corner tr"/>
                             <div className="scanner-corner bl"/><div className="scanner-corner br"/>
                             {scanAnimating&&<div className="scanner-beam"/>}
                             <div className="scanner-inner">
-                              {!scanAnimating&&!scanResult&&<div style={{textAlign:"center"}}><div style={{fontSize:"2rem",marginBottom:6}}>&#9635;</div><div style={{fontSize:".65rem",color:"#555",letterSpacing:".1em"}}>READY TO SCAN</div></div>}
-                              {scanAnimating&&<div style={{textAlign:"center",fontSize:".65rem",color:"#FF5733",letterSpacing:".15em"}}>SCANNING...</div>}
-                              {scanResult?.found&&(
+                              {!scanAnimating&&!scanResult&&<div style={{textAlign:"center"}}><div style={{fontSize:"2rem",marginBottom:6}}>[barcode]</div><div style={{fontSize:".65rem",color:"#555"}}>READY TO SCAN</div></div>}
+                              {scanAnimating&&<div style={{textAlign:"center",fontSize:".65rem",color:"#FF5733"}}>SCANNING...</div>}
+                              {scanResult&&scanResult.found&&(
                                 <div style={{textAlign:"center",padding:"0 8px"}}>
-                                  <div style={{fontSize:".6rem",color:"#10B981",letterSpacing:".15em",marginBottom:6}}>
-                                    FOUND {scanResult.source==="ai"&&<span style={{color:"#555"}}>· AI</span>}
-                                  </div>
-                                  <div style={{fontSize:".8rem",color:"#fff",fontWeight:600,marginBottom:4,lineHeight:1.3}}>{scanResult.food.name}</div>
+                                  <div style={{fontSize:".6rem",color:"#10B981",marginBottom:6}}>FOUND</div>
+                                  <div style={{fontSize:".8rem",color:"#fff",fontWeight:600,marginBottom:4}}>{scanResult.food.name}</div>
                                   <div style={{display:"flex",justifyContent:"center",gap:10,fontSize:".65rem"}}>
                                     <span style={{color:"#FF5733"}}>{scanResult.food.cal}kcal</span>
                                     <span style={{color:"#3B82F6"}}>{scanResult.food.protein}p</span>
-                                    <span style={{color:"#F59E0B"}}>{scanResult.food.carbs}c</span>
                                   </div>
                                 </div>
                               )}
-                              {scanResult&&!scanResult.found&&(
-                                <div style={{textAlign:"center",padding:"0 8px"}}>
-                                  <div style={{fontSize:".65rem",color:"#ff3b3b",marginBottom:4}}>NOT FOUND</div>
-                                  {scanResult.error&&<div style={{fontSize:".58rem",color:"#444",lineHeight:1.5}}>No connection.<br/>Check internet.</div>}
-                                </div>
-                              )}
+                              {scanResult&&!scanResult.found&&<div style={{textAlign:"center"}}><div style={{fontSize:".65rem",color:"#ff3b3b"}}>NOT FOUND</div></div>}
                             </div>
                           </div>
                         </div>
-                        <div className="form-label" style={{marginBottom:5}}>BARCODE NUMBER</div>
-                        <input className="form-input" placeholder="e.g. 5000112548167" value={scanInput} onChange={e=>setScanInput(e.target.value)} style={{marginBottom:6}}
-                          onKeyDown={e=>{if(e.key==="Enter")scanBarcode();}}/>
-                        <div style={{fontSize:".58rem",color:"#444",marginBottom:10}}>
-                          Enter a barcode for AI lookup, or leave blank for a demo scan.
-                        </div>
-                        {scanResult?.found?(
+                        <input className="form-input" placeholder="e.g. 5000112548167 (or leave blank)" value={scanInput} onChange={e=>setScanInput(e.target.value)} style={{marginBottom:6}}/>
+                        {scanResult&&scanResult.found?(
                           <div style={{display:"flex",gap:8}}>
                             <button className="ghost-btn" style={{flex:1,border:"1px solid #2a2a2a",borderRadius:8,padding:"10px 0",fontSize:".7rem"}} onClick={()=>{setScanResult(null);setScanInput("");}}>RESCAN</button>
                             <button className="create-btn" style={{flex:2,marginTop:0}} onClick={addScannedFood}>ADD TO LOG</button>
                           </div>
                         ):(
-                          <button className="create-btn" style={{marginTop:0}} onClick={scanBarcode} disabled={scanAnimating||scanLoading}>{scanAnimating||scanLoading?"SCANNING...":"SCAN BARCODE"}</button>
+                          <button className="create-btn" style={{marginTop:0}} onClick={simulateScan} disabled={scanAnimating}>{scanAnimating?"SCANNING...":"SCAN BARCODE"}</button>
                         )}
                       </div>
                     )}
                   </div>
                 ):(
-                  <button className="add-food-btn" onClick={()=>setAddingFood(true)}>+ LOG FOOD{!isToday&&` FOR ${friendlyDate(selectedDate)}`}</button>
+                  <button className="add-food-btn" onClick={()=>setAddingFood(true)}>+ LOG FOOD{!isToday?" FOR "+friendlyDate(selectedDate):""}</button>
                 )}
-                <div className="section-label">FOOD LOG</div>
-                {foodLog.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"#444",fontSize:".75rem"}}>No food logged{!isToday?" for this day":""}.</div>}
+
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div className="section-label" style={{marginBottom:0}}>FOOD LOG</div>
+                  <button className="add-routine-btn" style={{fontSize:".58rem",padding:"5px 10px"}} onClick={copyPreviousDay}>COPY YESTERDAY</button>
+                </div>
+                {foodLog.length===0&&(
+                  <div style={{textAlign:"center",padding:"28px 20px",color:T.faint}}>
+                    <div style={{fontFamily:T.display,fontSize:"1.2rem",color:T.muted,letterSpacing:".1em",marginBottom:6}}>NOTHING LOGGED YET</div>
+                    <div style={{fontSize:".72rem",lineHeight:1.6}}>fuel the work.<br/>log what you eat and own the numbers.</div>
+                  </div>
+                )}
                 {MEALS.map(meal=>{
                   const items=foodLog.filter(f=>f.meal===meal);
                   if(!items.length) return null;
@@ -1269,14 +1292,32 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                             <span style={{color:"#FF5733"}}>{f.cal}</span>
                             <span style={{color:"#3B82F6"}}>{f.protein}p</span>
                             <span style={{color:"#F59E0B"}}>{f.carbs}c</span>
-                            <span style={{color:"#10B981"}}>{f.fat}f</span>
                           </div>
-                          {<button className="remove-btn" onClick={()=>removeFood(f.id)}>x</button>}
+                          <button className="remove-btn" onClick={()=>removeFood(f.id)}>x</button>
                         </div>
                       ))}
                     </div>
                   );
                 })}
+
+                {/* Daily totals summary */}
+                {foodLog.length>0&&(
+                  <div style={{background:T.surface2,border:"1px solid "+T.border,borderRadius:12,padding:"14px",marginTop:8}}>
+                    <div style={{fontSize:".6rem",letterSpacing:".18em",color:T.muted,marginBottom:10}}>DAY TOTAL</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+                      {[{label:"Calories",value:totals.cal,goal:macroGoals.calories,unit:"kcal",color:T.accent},
+                        {label:"Protein",value:totals.protein,goal:macroGoals.protein,unit:"g",color:"#3B82F6"},
+                        {label:"Carbs",value:totals.carbs,goal:macroGoals.carbs,unit:"g",color:"#F59E0B"},
+                        {label:"Fat",value:totals.fat,goal:macroGoals.fat,unit:"g",color:"#10B981"}].map(m=>(
+                        <div key={m.label} style={{textAlign:"center"}}>
+                          <div style={{fontFamily:T.display,fontSize:"1.1rem",color:m.value>=m.goal?m.color:T.text,lineHeight:1}}>{m.value}</div>
+                          <div style={{fontSize:".52rem",color:T.muted,margin:"2px 0"}}>{m.unit}</div>
+                          <div style={{fontSize:".52rem",color:m.value>=m.goal?"#10B981":T.faint}}>{Math.round(m.value/m.goal*100)}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1290,28 +1331,32 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                   <div className="card new-wk-form">
                     <div className="form-label">WORKOUT NAME</div>
                     <input className="form-input" placeholder="e.g. Upper Body A" value={newWkName} onChange={e=>setNewWkName(e.target.value)}/>
-                    <div className="form-label" style={{marginTop:10}}>FOCUS / TAG</div>
+                    <div className="form-label" style={{marginTop:10}}>FOCUS</div>
                     <input className="form-input" placeholder="e.g. Chest, Back, Core" value={newWkTag} onChange={e=>setNewWkTag(e.target.value)}/>
                     <div className="form-label" style={{marginTop:10}}>COLOUR</div>
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
-                      {COLORS.map(c=><button key={c} className={`color-dot ${newWkColor===c?"color-dot-active":""}`} style={{"--cc":c}} onClick={()=>setNewWkColor(c)}/>)}
+                      {COLORS.map(c=><button key={c} className={"color-dot"+(newWkColor===c?" color-dot-active":"")} style={{"--cc":c}} onClick={()=>setNewWkColor(c)}/>)}
                     </div>
                     <button className="create-btn" onClick={createWorkout}>CREATE WORKOUT</button>
                   </div>
                 )}
-                {workouts.map(w=>(
-                  <div key={w.id} className="workout-card" style={{"--wc":w.color}}>
+                {sortedWorkouts.map(w=>(
+                  <div key={w.id} className={"workout-card"+(swipedWorkout===w.id?" workout-card-swiped":"")} style={{"--wc":w.color}}
+                    onTouchStart={e=>{swipeStartX.current=e.touches[0].clientX;}}
+                    onTouchEnd={e=>{if(swipeStartX.current===null)return;const diff=swipeStartX.current-e.changedTouches[0].clientX;if(diff>60)setSwipedWorkout(w.id);else if(diff<-20)setSwipedWorkout(null);swipeStartX.current=null;}}
+                  >
                     <div className="wc-color-bar"/>
                     <div className="wc-content">
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                        <div onClick={()=>startWorkout(w)} style={{flex:1,cursor:"pointer"}}>
-                          <div className="wc-label">{w.label}</div>
+                        <div onClick={()=>{setSwipedWorkout(null);startWorkout(w);}} style={{flex:1,cursor:"pointer"}}>
+                          <div className="wc-label">{w.label}{favourites.includes(w.id)&&<span style={{color:"#F59E0B",marginLeft:6,fontSize:"1rem"}}>★</span>}</div>
                           <div className="wc-tag">{w.tag}</div>
                         </div>
-                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                           {workoutDone.includes(w.id)&&<div className="wc-badge">v</div>}
-                          <button className="edit-icon-btn" onClick={()=>setEditingWorkout(editingWorkout===w.id?null:w.id)}>E</button>
-                          <button className="delete-icon-btn" onClick={()=>deleteWorkout(w.id)}>D</button>
+                          <button className="edit-icon-btn" style={{color:favourites.includes(w.id)?"#F59E0B":"#555",borderColor:favourites.includes(w.id)?"#F59E0B44":"#2a2a2a"}} onClick={()=>toggleFav(w.id)}>{favourites.includes(w.id)?"★":"☆"}</button>
+                          <button className="edit-icon-btn" onClick={()=>{setSwipedWorkout(null);setEditingWorkout(editingWorkout===w.id?null:w.id);}}>EDIT</button>
+                          <button className="edit-icon-btn" style={{color:"#ff3b3b",borderColor:"#ff3b3b33"}} onClick={()=>deleteWorkout(w.id)}>DELETE</button>
                         </div>
                       </div>
                       <div className="wc-exercises">
@@ -1322,19 +1367,71 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                       {editingWorkout===w.id&&(
                         <div className="edit-panel">
                           <div className="edit-panel-label">EXERCISES ({w.exercises.length})</div>
-                          {w.exercises.map(ex=>(
-                            <div key={ex.id} className="edit-ex-row">
-                              <button className="video-preview-btn" onClick={()=>setVideoModal(ex.name)}>&#9654;</button>
-                              <span className="edit-ex-name">{ex.name}</span>
-                              <span className="edit-ex-meta">{ex.sets}x{ex.reps}</span>
-                              <button className="remove-ex-btn" onClick={()=>removeExercise(w.id,ex.id)}>x</button>
+                          {w.exercises.map((ex,exIdx)=>(
+                            <div key={ex.id}
+                              style={{background:"#0d0d0d",border:"1px solid #222",borderRadius:"10px",padding:"12px",marginBottom:"8px"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                                    <button
+                                      onClick={()=>moveExercise(w.id,exIdx,-1)}
+                                      disabled={exIdx===0}
+                                      style={{background:exIdx===0?"#1a1a1a":"#2a2a2a",border:"none",borderRadius:4,color:exIdx===0?"#333":"#aaa",cursor:exIdx===0?"default":"pointer",fontSize:".65rem",padding:"3px 7px",lineHeight:1}}>
+                                      ▲
+                                    </button>
+                                    <button
+                                      onClick={()=>moveExercise(w.id,exIdx,1)}
+                                      disabled={exIdx===w.exercises.length-1}
+                                      style={{background:exIdx===w.exercises.length-1?"#1a1a1a":"#2a2a2a",border:"none",borderRadius:4,color:exIdx===w.exercises.length-1?"#333":"#aaa",cursor:exIdx===w.exercises.length-1?"default":"pointer",fontSize:".65rem",padding:"3px 7px",lineHeight:1}}>
+                                      ▼
+                                    </button>
+                                  </div>
+                                  <span style={{fontSize:".8rem",color:"#fff",fontWeight:600}}>{ex.name}</span>
+                                </div>
+                                <button className="remove-ex-btn" style={{color:"#ff3b3b",fontSize:".7rem",border:"1px solid #ff3b3b33",borderRadius:"6px",padding:"3px 8px"}} onClick={()=>removeExercise(w.id,ex.id)}>REMOVE</button>
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+                                <div>
+                                  <div className="form-label">SETS</div>
+                                  <input className="form-input" style={{padding:"6px 10px"}} type="number" value={ex.sets}
+                                    onChange={e=>setWorkouts(p=>p.map(wk=>wk.id===w.id?{...wk,exercises:wk.exercises.map((e,i)=>i===exIdx?{...e,sets:e.target?.value||e.sets}:e)}:wk))}
+                                    onBlur={e=>setWorkouts(p=>p.map(wk=>wk.id===w.id?{...wk,exercises:wk.exercises.map((ex2,i)=>i===exIdx?{...ex2,sets:e.target.value}:ex2)}:wk))}
+                                  />
+                                </div>
+                                <div>
+                                  <div className="form-label">REPS</div>
+                                  <input className="form-input" style={{padding:"6px 10px"}} value={ex.reps}
+                                    onBlur={e=>setWorkouts(p=>p.map(wk=>wk.id===w.id?{...wk,exercises:wk.exercises.map((ex2,i)=>i===exIdx?{...ex2,reps:e.target.value}:ex2)}:wk))}
+                                    onChange={e=>setWorkouts(p=>p.map(wk=>wk.id===w.id?{...wk,exercises:wk.exercises.map((ex2,i)=>i===exIdx?{...ex2,reps:e.target.value}:ex2)}:wk))}
+                                  />
+                                </div>
+                              </div>
+                              <div className="form-label" style={{marginBottom:"6px"}}>REST TIMER</div>
+                              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                                {REST_PRESETS.map(s=>{
+                                  const rs=s+"s";
+                                  return (
+                                    <button key={s}
+                                      style={{
+                                        background:ex.rest===rs?"#FF5733":"#1a1a1a",
+                                        border:"1px solid "+(ex.rest===rs?"#FF5733":"#2a2a2a"),
+                                        borderRadius:"6px",color:ex.rest===rs?"#fff":"#888",
+                                        fontSize:".7rem",padding:"6px 12px",cursor:"pointer",
+                                        fontFamily:"'DM Sans',sans-serif",fontWeight:ex.rest===rs?600:400
+                                      }}
+                                      onClick={()=>updateExRest(w.id,ex.id,rs)}>
+                                      {s}s
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
                           ))}
                           {addExMode===w.id?(
                             <div className="add-ex-panel">
                               <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center"}}>
-                                <button className={`ex-mode-tab ${!customMode?"ex-mode-active":""}`} onClick={()=>setCustomMode(false)}>LIBRARY</button>
-                                <button className={`ex-mode-tab ${customMode?"ex-mode-active":""}`} onClick={()=>setCustomMode(true)}>CUSTOM</button>
+                                <button className={"ex-mode-tab"+(!customMode?" ex-mode-active":"")} onClick={()=>setCustomMode(false)}>LIBRARY</button>
+                                <button className={"ex-mode-tab"+(customMode?" ex-mode-active":"")} onClick={()=>setCustomMode(true)}>CUSTOM</button>
                                 <button className="ghost-btn" style={{marginLeft:"auto"}} onClick={()=>{setAddExMode(null);setCustomMode(false);setExSearch("");}}>x</button>
                               </div>
                               {!customMode?(
@@ -1344,8 +1441,7 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                                     {filteredLib.map(name=>{
                                       const already=w.exercises.some(e=>e.name===name);
                                       return (
-                                        <div key={name} className={`lib-item ${already?"lib-item-added":""}`}>
-                                          <button className="video-preview-btn" onClick={()=>setVideoModal(name)}>&#9654;</button>
+                                        <div key={name} className={"lib-item"+(already?" lib-item-added":"")}>
                                           <span style={{flex:1,fontSize:".75rem",color:already?"#444":"#ccc"}}>{name}</span>
                                           <button className="lib-add-btn" disabled={already} onClick={()=>addExerciseFromLib(w.id,name)}>{already?"v":"+"}</button>
                                         </div>
@@ -1374,9 +1470,11 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                       )}
                       {editingWorkout!==w.id&&<div className="wc-start" onClick={()=>startWorkout(w)}>START</div>}
                     </div>
+                    <div className={"swipe-delete-reveal"+(swipedWorkout===w.id?" swipe-delete-visible":"")}>
+                      <button className="swipe-delete-btn" onClick={()=>{deleteWorkout(w.id);setSwipedWorkout(null);}}>DELETE</button>
+                    </div>
                   </div>
                 ))}
-                {/* Workout History */}
                 {workoutHistory.length>0&&(
                   <>
                     <div className="section-label" style={{marginTop:24}}>HISTORY</div>
@@ -1386,17 +1484,16 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                         <div style={{flex:1,padding:"12px 14px"}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                             <div>
-                              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.1rem",color:h.workoutColor,letterSpacing:".05em"}}>{h.workoutLabel}</div>
-                              <div style={{fontSize:".6rem",color:"#555",letterSpacing:".08em"}}>{h.workoutTag}</div>
+                              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1.1rem",color:h.workoutColor}}>{h.workoutLabel}</div>
+                              <div style={{fontSize:".6rem",color:"#555"}}>{h.workoutTag}</div>
                             </div>
                             <div style={{textAlign:"right"}}>
-                              <div style={{fontSize:".6rem",color:"#555",letterSpacing:".08em"}}>{h.date}</div>
-                              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1rem",color:"#888",letterSpacing:".05em"}}>{fmt(h.duration)}</div>
+                              <div style={{fontSize:".6rem",color:"#555"}}>{h.date}</div>
+                              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1rem",color:"#888"}}>{fmt(h.duration)}</div>
                             </div>
                           </div>
                           <div style={{display:"flex",gap:16,marginTop:8}}>
                             <div className="history-stat"><div className="history-stat-val">{h.setsCompleted}/{h.totalSets}</div><div className="history-stat-label">SETS</div></div>
-                            {h.volume>0&&<div className="history-stat"><div className="history-stat-val">{h.volume>999?`${(h.volume/1000).toFixed(1)}t`:`${h.volume}kg`}</div><div className="history-stat-label">VOLUME</div></div>}
                           </div>
                         </div>
                       </div>
@@ -1408,12 +1505,11 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
 
             {tab==="workout"&&activeWorkout&&(
               <div className="page fade-in">
-                {/* Rest timer banner */}
                 {restTimer&&(
-                  <div className="rest-timer-bar" style={{"--rp":`${(restTimer.remaining/restTimer.total)*100}%`,"--rc":activeWorkout.color}}>
+                  <div className="rest-timer-bar" style={{"--rp":(restTimer.remaining/restTimer.total)*100+"%","--rc":activeWorkout.color}}>
                     <div className="rest-timer-fill"/>
                     <div className="rest-timer-content">
-                      <div className="rest-timer-label">REST — {restTimer.exName}</div>
+                      <div className="rest-timer-label">REST - {restTimer.exName}</div>
                       <div className="rest-timer-count">{restTimer.remaining}s</div>
                       <button className="rest-timer-skip" onClick={()=>setRestTimer(null)}>SKIP</button>
                     </div>
@@ -1422,7 +1518,7 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
                   <div>
                     <div className="page-title" style={{color:activeWorkout.color,marginBottom:2}}>{activeWorkout.label}</div>
-                    <div style={{fontSize:".65rem",color:"#666",letterSpacing:".1em"}}>{activeWorkout.tag}</div>
+                    <div style={{fontSize:".65rem",color:"#666"}}>{activeWorkout.tag}</div>
                   </div>
                   <div className="big-timer">{fmt(elapsed)}</div>
                 </div>
@@ -1439,50 +1535,50 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                         <button className="watch-btn" onClick={()=>setVideoModal(ex.name)}>WATCH</button>
                       </div>
                       <div className="ex-meta"><span>{ex.sets} sets</span><span>{ex.reps} reps</span><span>Rest {ex.rest}</span></div>
-                      {/* Progressive overload suggestion */}
                       {suggestion&&(
                         <div className="overload-hint">
                           <span className="overload-last">Last: {suggestion.lastWeight}kg</span>
-                          <span className="overload-arrow">→</span>
-                          <span className="overload-target">Try {suggestion.suggested}kg today</span>
+                          <span className="overload-arrow"> to </span>
+                          <span className="overload-target">Try {suggestion.suggested}kg</span>
                         </div>
                       )}
                       {ex.tip&&<div className="ex-tip">{ex.tip}</div>}
-                      {/* Sets with weight input */}
                       <div className="sets-grid">
                         {Array.from({length:parseInt(ex.sets)||3}).map((_,si)=>{
-                          const k=`${ei}-${si}`;
+                          const k=ei+"-"+si;
+                          const rk="reps-"+ei+"-"+si;
                           const done=!!completedSets[k];
-                          const w=setWeights[k]||"";
-                          const isNew=w&&pb&&parseFloat(w)>pb;
+                          const wv=setWeights[k]||"";
+                          const rv=setWeights[rk]||"";
+                          const isNew=wv&&pb&&parseFloat(wv)>pb;
                           return (
-                            <div key={si} className={`set-row ${done?"set-row-done":""}`} style={{"--wc":activeWorkout.color}}>
+                            <div key={si} className={"set-row"+(done?" set-row-done":"")} style={{"--wc":activeWorkout.color}}>
                               <span className="set-num">SET {si+1}</span>
-                              <div className="weight-input-wrap">
+                              <div style={{display:"flex",gap:4,flex:1}}>
                                 {editingWeight===k?(
-                                  <input
-                                    className="weight-input"
-                                    type="number"
-                                    placeholder="kg"
-                                    value={w}
-                                    autoFocus
+                                  <input className="weight-input" type="number" placeholder="kg" value={wv} autoFocus
                                     onChange={e=>setSetWeights(p=>({...p,[k]:e.target.value}))}
                                     onBlur={()=>setEditingWeight(null)}
-                                    onKeyDown={e=>{if(e.key==="Enter"){setEditingWeight(null);toggleSetP3(ei,si,ex);}}}
-                                    style={{width:60}}
-                                  />
+                                    onKeyDown={e=>{if(e.key==="Enter")setEditingWeight(null);}}
+                                    style={{width:55}}/>
                                 ):(
                                   <button className="weight-pill" onClick={()=>setEditingWeight(k)}>
-                                    {w?`${w}kg`:"+ kg"}
-                                    {isNew&&<span className="pb-star">★</span>}
+                                    {wv?wv+"kg":"+ kg"}{isNew&&<span className="pb-star">*</span>}
+                                  </button>
+                                )}
+                                {editingWeight===rk?(
+                                  <input className="weight-input" type="number" placeholder="reps" value={rv} autoFocus
+                                    onChange={e=>setSetWeights(p=>({...p,[rk]:e.target.value}))}
+                                    onBlur={()=>setEditingWeight(null)}
+                                    onKeyDown={e=>{if(e.key==="Enter"){setEditingWeight(null);toggleSetP3(ei,si,ex);}}}
+                                    style={{width:55}}/>
+                                ):(
+                                  <button className="weight-pill" style={{color:rv?"#F59E0B":"#555"}} onClick={()=>setEditingWeight(rk)}>
+                                    {rv?rv+"r":"+ r"}
                                   </button>
                                 )}
                               </div>
-                              <button
-                                className={`set-btn-v2 ${done?"set-btn-done":""}`}
-                                style={{"--wc":activeWorkout.color}}
-                                onClick={()=>toggleSetP3(ei,si,ex)}
-                              >{done?"✓":"GO"}</button>
+                              <button className={"set-btn-v2"+(done?" set-btn-done":"")} style={{"--wc":activeWorkout.color}} onClick={()=>toggleSetP3(ei,si,ex)}>{done?"v":"GO"}</button>
                             </div>
                           );
                         })}
@@ -1501,22 +1597,9 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
                   <div className="sh-tagline">so what are you doing</div>
                 </div>
                 <div className="brand-manifesto card">
-                  <p>We built Swayd for people who do not need motivation — they need movement. Every rep, every meal, every day you show up is a statement.</p>
-                  <p style={{marginTop:12,color:"#888"}}>So what are you doing? We already know the answer.</p>
+                  <p>We built Swayd for people who do not need motivation - they need movement. Every rep, every meal, every day you show up is a statement.</p>
                 </div>
-                <div className="section-label" style={{marginTop:20}}>THE LINE</div>
-                <div className="gear-grid">
-                  {[{name:"SWAYD Training Tee",desc:"Oversized drop-shoulder. Sweat-wicking.",tag:"BESTSELLER"},{name:"Movement Shorts",desc:"5in inseam. Hidden phone pocket.",tag:"NEW DROP"},{name:"SWAYD Hoodie",desc:"Heavyweight 400gsm. Post-workout staple.",tag:""},{name:"Compression Set",desc:"Full-length tights and crop top.",tag:"WOMEN'S"},{name:"Gym Bag",desc:"40L. Shoe compartment. Molle webbing.",tag:"COLLAB"},{name:"Stringer Tank",desc:"Raw-edge. Wide-cut armhole.",tag:""}].map(g=>(
-                    <div key={g.name} className="gear-card">
-                      <div className="gear-icon">S</div>
-                      {g.tag&&<div className="gear-tag">{g.tag}</div>}
-                      <div className="gear-name">{g.name}</div>
-                      <div className="gear-desc">{g.desc}</div>
-                      <button className="gear-btn">SHOP</button>
-                    </div>
-                  ))}
-                </div>
-                <div className="section-label" style={{marginTop:24}}>COMMUNITY</div>
+                <div className="section-label" style={{marginTop:20}}>COMMUNITY</div>
                 <div className="community-row">
                   <div><div className="cs-num">14K</div><div className="cs-label">Athletes</div></div>
                   <div><div className="cs-num">inf</div><div className="cs-label">Reps Logged</div></div>
@@ -1526,11 +1609,11 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
             )}
 
           </main>
-          <nav className="app-nav">
+          <nav className="app-nav" style={{background:T.bg,borderTopColor:T.border}}>
             {navItems.map(n=>(
-              <button key={n.id} className={`nav-btn ${tab===n.id||(n.id==="routines"&&tab==="workout")?"nav-active":""}`}
+              <button key={n.id} className={"nav-btn"+(tab===n.id||(n.id==="routines"&&tab==="workout")?" nav-active":"")}
+                style={{color:tab===n.id||(n.id==="routines"&&tab==="workout")?T.accent:T.faint,fontFamily:T.body}}
                 onClick={()=>{if(n.id!=="routines")setActiveWorkout(null);setTab(n.id==="routines"&&activeWorkout?"workout":n.id);}}>
-                <span className="nav-icon">{n.icon}</span>
                 <span className="nav-label">{n.label}</span>
               </button>
             ))}
@@ -1542,7 +1625,6 @@ Today water: ${todayWater}/${WATER_GOAL} glasses.
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;height:100vh;overflow:hidden;}
 .app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;background:#0a0a0a;}
@@ -1550,28 +1632,37 @@ body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;hei
 .brand{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.1em;color:#fff;line-height:1;}
 .brand-s{color:#FF5733;}
 .brand-sub{font-size:.6rem;color:#444;letter-spacing:.18em;text-transform:uppercase;flex:1;}
-.workout-timer-pill{display:flex;align-items:center;gap:6px;background:#FF573322;border:1px solid #FF573344;border-radius:99px;padding:4px 12px;font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#FF5733;letter-spacing:.1em;}
+.workout-timer-pill{display:flex;align-items:center;gap:6px;background:#FF573322;border:1px solid #FF573344;border-radius:99px;padding:4px 12px;font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#FF5733;}
 .timer-dot{width:6px;height:6px;border-radius:50%;background:#FF5733;animation:pulse 1s infinite;}
-.profile-btn{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;cursor:pointer;flex-shrink:0;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.profile-btn{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;cursor:pointer;}
 .app-main{flex:1;overflow-y:auto;padding:0 16px 16px;scrollbar-width:none;}
 .app-main::-webkit-scrollbar{display:none;}
 .page{padding-top:16px;padding-bottom:16px;}
 .fade-in{animation:fadeIn .25s ease;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .page-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.1em;color:#fff;margin-bottom:16px;}
 .section-label{font-size:.6rem;letter-spacing:.2em;color:#444;text-transform:uppercase;margin-bottom:8px;}
 .card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:16px;}
 .ghost-btn{background:none;border:none;color:#666;cursor:pointer;}
 .hero-banner{background:linear-gradient(135deg,#111 0%,#1a0f0a 100%);border:1px solid #FF573322;border-radius:16px;padding:28px 24px 24px;margin-bottom:16px;position:relative;overflow:hidden;}
-.hero-banner::after{content:'SW';position:absolute;right:-10px;bottom:-20px;font-family:'Bebas Neue',sans-serif;font-size:7rem;color:#FF573310;pointer-events:none;}
 .hero-eyebrow{font-size:.62rem;letter-spacing:.25em;color:#FF5733;margin-bottom:8px;}
-.hero-headline{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;line-height:1;color:#fff;letter-spacing:.05em;margin-bottom:10px;}
+.hero-headline{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;line-height:1.1;color:#fff;letter-spacing:.05em;margin-bottom:10px;}
 .hero-sub{font-size:.7rem;color:#666;letter-spacing:.15em;}
-.streak-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:#FF573322;border:1px solid #FF573344;border-radius:99px;padding:4px 12px;font-size:.65rem;letter-spacing:.12em;color:#FF5733;}
+.streak-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:#FF573322;border:1px solid #FF573344;border-radius:99px;padding:4px 12px;font-size:.65rem;color:#FF5733;}
+.nudge-card{background:#0f1a14;border:1px solid #10B98133;border-radius:14px;padding:14px 16px;margin-bottom:16px;}
+.nudge-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.nudge-label{font-size:.58rem;letter-spacing:.22em;color:#10B981;}
+.nudge-refresh{background:none;border:none;color:#444;font-size:1rem;cursor:pointer;padding:0;}
+.nudge-text{font-size:.78rem;color:#ccc;line-height:1.6;}
+.nudge-loading{display:flex;gap:5px;align-items:center;height:20px;}
+.nudge-dot{width:5px;height:5px;border-radius:50%;background:#10B981;animation:ndp 1.2s ease-in-out infinite;}
+.nudge-dot:nth-child(2){animation-delay:.2s;}
+.nudge-dot:nth-child(3){animation-delay:.4s;}
+@keyframes ndp{0%,100%{opacity:.2}50%{opacity:1}}
 .week-strip{display:flex;gap:6px;margin-bottom:16px;}
 .week-day{flex:1;background:#111;border:1px solid #1c1c1c;border-radius:10px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:all .2s;}
-.week-day:hover{border-color:#FF573344;}
 .week-day-today{border-color:#FF573333;}
 .week-day-selected{background:#FF573318;border-color:#FF5733;}
 .wd-label{font-size:.52rem;letter-spacing:.08em;color:#555;}
@@ -1579,43 +1670,45 @@ body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;hei
 .week-day-selected .wd-num,.week-day-today .wd-num{color:#fff;}
 .week-day-selected .wd-num{color:#FF5733;}
 .wd-dot{width:6px;height:6px;border-radius:50%;background:#222;}
-.wd-dot-hit{background:#10B981;box-shadow:0 0 4px #10B98166;}
+.wd-dot-hit{background:#10B981;}
 .wd-dot-partial{background:#F59E0B;}
+.home-stats-row{display:flex;gap:8px;margin-bottom:12px;}
+.home-stat-card{flex:1;padding:12px 12px 10px;}
 .date-nav{display:flex;align-items:center;justify-content:space-between;background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:10px 16px;margin-bottom:14px;}
 .date-nav-btn{background:none;border:none;color:#FF5733;font-size:1.8rem;cursor:pointer;padding:0 4px;line-height:1;}
-.date-nav-btn:disabled{color:#333;cursor:default;}
 .date-nav-label{text-align:center;}
 .date-nav-main{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.15em;color:#fff;}
-.date-nav-sub{font-size:.58rem;color:#555;letter-spacing:.1em;}
+.date-nav-sub{font-size:.58rem;color:#555;}
 .rings-row{display:flex;justify-content:space-around;align-items:center;padding:8px 0 4px;}
 .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
-.quick-card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:left;position:relative;overflow:hidden;}
+.quick-card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:16px 14px;cursor:pointer;text-align:left;position:relative;overflow:hidden;}
 .quick-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--wc);}
-.quick-card:hover{border-color:var(--wc);background:#161616;}
-.qc-label{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--wc);letter-spacing:.05em;}
-.qc-tag{font-size:.58rem;color:#666;letter-spacing:.05em;margin-top:2px;}
-.qc-done{font-size:.6rem;color:#10B981;letter-spacing:.1em;margin-top:8px;}
+.qc-label{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--wc);}
+.qc-tag{font-size:.58rem;color:#666;margin-top:2px;}
+.qc-done{font-size:.6rem;color:#10B981;margin-top:8px;}
 .motivational{text-align:center;font-size:.65rem;color:#333;letter-spacing:.1em;padding:16px 0 4px;}
-.mot-brand{color:#FF5733;font-family:'Bebas Neue',sans-serif;font-size:.9rem;}
-.add-food-btn{width:100%;background:transparent;border:1px dashed #FF573344;border-radius:10px;color:#FF5733;font-family:'DM Sans',sans-serif;font-size:.75rem;letter-spacing:.15em;padding:12px;cursor:pointer;margin-bottom:16px;transition:all .2s;}
-.add-food-btn:hover{background:#FF573310;border-color:#FF5733;}
-.meal-chip{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:99px;padding:4px 12px;font-size:.65rem;letter-spacing:.1em;color:#777;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.mot-brand{color:#FF5733;font-family:'Bebas Neue',sans-serif;}
+.water-glasses{display:flex;gap:4px;flex-wrap:wrap;}
+.water-glass{width:14px;height:18px;border-radius:2px 2px 4px 4px;border:1px solid #2a2a2a;background:#1a1a1a;}
+.water-glass-full{background:#3B82F6;border-color:#3B82F655;}
+.water-btn{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;color:#888;font-family:'DM Sans',sans-serif;font-size:.7rem;padding:6px 0;cursor:pointer;}
+.water-btn:disabled{opacity:.3;cursor:default;}
+.water-btn-add{color:#3B82F6;border-color:#3B82F633;background:#3B82F611;}
+.add-food-btn{width:100%;background:transparent;border:1px dashed #FF573344;border-radius:10px;color:#FF5733;font-family:'DM Sans',sans-serif;font-size:.75rem;letter-spacing:.15em;padding:12px;cursor:pointer;margin-bottom:16px;}
+.meal-chip{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:99px;padding:4px 12px;font-size:.65rem;color:#777;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .meal-chip-active{background:#FF573320;border-color:#FF573366;color:#FF5733;}
-.food-mode-tab{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#666;font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.1em;padding:7px 4px;cursor:pointer;transition:all .15s;text-align:center;}
+.food-mode-tab{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#666;font-family:'DM Sans',sans-serif;font-size:.6rem;padding:7px 4px;cursor:pointer;text-align:center;}
 .food-mode-active{background:#FF573320;border-color:#FF573366;color:#FF5733;}
 .food-pick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.food-pick-btn{background:#161616;border:1px solid #222;border-radius:8px;padding:10px;cursor:pointer;text-align:left;transition:all .15s;width:100%;}
-.food-pick-btn:hover{border-color:#FF573344;background:#1a1a1a;}
+.food-pick-btn{background:#161616;border:1px solid #222;border-radius:8px;padding:10px;cursor:pointer;text-align:left;width:100%;}
 .fpb-name{font-size:.65rem;color:#ccc;margin-bottom:4px;line-height:1.3;}
-.fpb-macros{display:flex;gap:6px;font-size:.6rem;font-family:'Bebas Neue',sans-serif;letter-spacing:.05em;}
-.custom-food-del{position:absolute;top:6px;right:6px;background:none;border:none;color:#333;cursor:pointer;font-size:.7rem;padding:2px;}
-.custom-food-del:hover{color:#ff3b3b;}
+.fpb-macros{display:flex;gap:6px;font-size:.6rem;font-family:'Bebas Neue',sans-serif;}
+.custom-food-del{position:absolute;top:6px;right:6px;background:none;border:none;color:#333;cursor:pointer;font-size:.7rem;}
 .meal-heading{font-size:.62rem;letter-spacing:.2em;color:#555;text-transform:uppercase;margin-bottom:6px;}
 .food-row{display:flex;align-items:center;background:#111;border:1px solid #1c1c1c;border-radius:8px;padding:10px 12px;margin-bottom:6px;gap:10px;}
 .food-row-name{flex:1;font-size:.75rem;color:#ddd;}
 .food-row-macros{display:flex;gap:8px;font-size:.65rem;font-family:'Bebas Neue',sans-serif;}
 .remove-btn{background:none;border:none;color:#333;cursor:pointer;font-size:.75rem;padding:2px 4px;}
-.remove-btn:hover{color:#ff3b3b;}
 .barcode-section{display:flex;flex-direction:column;gap:12px;}
 .scanner-viewport{display:flex;justify-content:center;padding:8px 0;}
 .scanner-frame{width:200px;height:140px;position:relative;display:flex;align-items:center;justify-content:center;background:#0a0a0a;border-radius:8px;overflow:hidden;}
@@ -1625,200 +1718,136 @@ body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;hei
 .scanner-corner.bl{bottom:8px;left:8px;border-bottom-width:2px;border-left-width:2px;}
 .scanner-corner.br{bottom:8px;right:8px;border-bottom-width:2px;border-right-width:2px;}
 @keyframes beamScan{0%{top:12px}100%{top:calc(100% - 12px)}}
-.scanner-beam{position:absolute;left:12px;right:12px;height:2px;background:linear-gradient(90deg,transparent,#FF5733,transparent);animation:beamScan .8s ease-in-out infinite alternate;box-shadow:0 0 8px #FF5733;}
+.scanner-beam{position:absolute;left:12px;right:12px;height:2px;background:linear-gradient(90deg,transparent,#FF5733,transparent);animation:beamScan .8s ease-in-out infinite alternate;}
 .scanner-inner{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#555;z-index:1;}
-.add-routine-btn{background:transparent;border:1px solid #FF573344;border-radius:8px;color:#FF5733;font-family:'DM Sans',sans-serif;font-size:.65rem;letter-spacing:.15em;padding:7px 14px;cursor:pointer;transition:all .2s;}
-.add-routine-btn:hover{background:#FF573315;}
+.add-routine-btn{background:transparent;border:1px solid #FF573344;border-radius:8px;color:#FF5733;font-family:'DM Sans',sans-serif;font-size:.65rem;letter-spacing:.15em;padding:7px 14px;cursor:pointer;}
 .new-wk-form{margin-bottom:16px;}
 .form-label{font-size:.58rem;letter-spacing:.18em;color:#555;text-transform:uppercase;margin-bottom:5px;}
-.form-input{width:100%;background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:9px 12px;color:#ddd;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;transition:border-color .2s;}
+.form-input{width:100%;background:#161616;border:1px solid #2a2a2a;border-radius:8px;padding:9px 12px;color:#ddd;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;}
 .form-input:focus{border-color:#FF573366;}
 .form-input::placeholder{color:#333;}
-.color-dot{width:24px;height:24px;border-radius:50%;background:var(--cc);border:2px solid transparent;cursor:pointer;transition:all .15s;}
+.color-dot{width:24px;height:24px;border-radius:50%;background:var(--cc);border:2px solid transparent;cursor:pointer;}
 .color-dot-active{border-color:#fff;transform:scale(1.2);}
-.create-btn{width:100%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;border-radius:8px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.15em;padding:11px;cursor:pointer;margin-top:4px;transition:opacity .2s;}
-.create-btn:hover{opacity:.88;}
-.workout-card{display:flex;background:#111;border:1px solid #1c1c1c;border-radius:14px;margin-bottom:12px;overflow:hidden;}
+.create-btn{width:100%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;border-radius:8px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.15em;padding:11px;cursor:pointer;margin-top:4px;}
+.workout-card{display:flex;background:#111;border:1px solid #1c1c1c;border-radius:14px;margin-bottom:12px;overflow:hidden;position:relative;transition:transform .2s;}
+.workout-card-swiped{transform:translateX(-80px);}
+.swipe-delete-reveal{position:absolute;right:0;top:0;bottom:0;width:80px;background:#ff3b3b;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;}
+.swipe-delete-visible{opacity:1;pointer-events:all;}
+.swipe-delete-btn{background:none;border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.8rem;cursor:pointer;width:100%;height:100%;}
 .wc-color-bar{width:3px;background:var(--wc);flex-shrink:0;}
 .wc-content{flex:1;padding:16px;}
-.wc-label{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--wc);letter-spacing:.05em;line-height:1;}
-.wc-tag{font-size:.62rem;color:#666;letter-spacing:.08em;margin:2px 0 10px;}
+.wc-label{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--wc);line-height:1;}
+.wc-tag{font-size:.62rem;color:#666;margin:2px 0 10px;}
 .wc-exercises{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
 .wc-ex-chip{font-size:.58rem;background:#1a1a1a;border:1px solid #222;border-radius:4px;padding:2px 7px;color:#888;}
 .wc-start{font-size:.65rem;letter-spacing:.2em;color:var(--wc);cursor:pointer;}
 .wc-badge{width:28px;height:28px;border-radius:50%;background:#10B98122;border:1px solid #10B981;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:#10B981;}
-.edit-icon-btn,.delete-icon-btn{background:none;border:1px solid #2a2a2a;border-radius:5px;color:#555;cursor:pointer;font-size:.7rem;padding:3px 7px;font-family:'DM Sans',sans-serif;}
-.delete-icon-btn:hover{color:#ff3b3b;border-color:#ff3b3b44;}
+.edit-icon-btn{background:none;border:1px solid #2a2a2a;border-radius:5px;color:#555;cursor:pointer;font-size:.7rem;padding:3px 7px;font-family:'DM Sans',sans-serif;}
 .edit-panel{margin-top:12px;border-top:1px solid #1c1c1c;padding-top:12px;}
 .edit-panel-label{font-size:.58rem;letter-spacing:.2em;color:#444;margin-bottom:8px;}
 .edit-ex-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #161616;}
-.video-preview-btn{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;color:#FF5733;font-size:.62rem;padding:3px 7px;cursor:pointer;flex-shrink:0;}
-.video-preview-btn:hover{background:#FF573322;}
 .edit-ex-name{flex:1;font-size:.75rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .edit-ex-meta{font-size:.62rem;color:#555;white-space:nowrap;}
 .remove-ex-btn{background:none;border:none;color:#333;cursor:pointer;font-size:.8rem;padding:2px 5px;}
-.remove-ex-btn:hover{color:#ff3b3b;}
-.add-ex-trigger{width:100%;background:transparent;border:1px dashed #2a2a2a;border-radius:8px;color:#555;font-size:.65rem;letter-spacing:.15em;padding:9px;cursor:pointer;margin-top:10px;transition:all .2s;font-family:'DM Sans',sans-serif;}
-.add-ex-trigger:hover{border-color:#FF573344;color:#FF5733;}
+.add-ex-trigger{width:100%;background:transparent;border:1px dashed #2a2a2a;border-radius:8px;color:#555;font-size:.65rem;letter-spacing:.15em;padding:9px;cursor:pointer;margin-top:10px;font-family:'DM Sans',sans-serif;}
 .start-btn-inline{width:100%;background:transparent;border:1px solid var(--wc);border-radius:8px;color:var(--wc);font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.15em;padding:10px;cursor:pointer;margin-top:10px;}
 .add-ex-panel{margin-top:10px;background:#0d0d0d;border:1px solid #1c1c1c;border-radius:10px;padding:12px;}
 .ex-mode-tab{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#666;font-family:'DM Sans',sans-serif;font-size:.62rem;letter-spacing:.1em;padding:5px 12px;cursor:pointer;}
 .ex-mode-active{background:#FF573320;border-color:#FF573366;color:#FF5733;}
-.lib-list{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin;scrollbar-color:#222 transparent;}
-.lib-item{display:flex;align-items:center;gap:8px;padding:7px 8px;background:#111;border-radius:7px;border:1px solid transparent;}
-.lib-item:hover:not(.lib-item-added){border-color:#FF573322;}
+.lib-list{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+.lib-item{display:flex;align-items:center;gap:8px;padding:7px 8px;background:#111;border-radius:7px;}
 .lib-item-added{opacity:.4;}
 .lib-add-btn{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;color:#aaa;font-size:.75rem;width:24px;height:24px;cursor:pointer;}
-.lib-add-btn:hover:not(:disabled){background:#FF573322;border-color:#FF5733;color:#FF5733;}
-.lib-add-btn:disabled{color:#10B981;cursor:default;}
 .custom-ex-form{display:flex;flex-direction:column;gap:6px;}
+.rest-preset-btn{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:5px;color:#888;font-size:.58rem;padding:3px 6px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.rest-preset-active{background:#FF573320;border-color:#FF5733;color:#FF5733;}
+.history-card{display:flex;background:#111;border:1px solid #1c1c1c;border-radius:12px;margin-bottom:8px;overflow:hidden;}
+.history-color-bar{width:3px;background:var(--hc);flex-shrink:0;}
+.history-stat{display:flex;flex-direction:column;gap:2px;}
+.history-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#ccc;}
+.history-stat-label{font-size:.52rem;letter-spacing:.15em;color:#444;}
+.rest-timer-bar{position:relative;background:#111;border:1px solid #1c1c1c;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.rest-timer-fill{position:absolute;inset:0;background:var(--rc);width:var(--rp);opacity:.15;transition:width 1s linear;}
+.rest-timer-content{position:relative;display:flex;align-items:center;gap:12px;padding:12px 16px;}
+.rest-timer-label{flex:1;font-size:.62rem;letter-spacing:.12em;color:#aaa;}
+.rest-timer-count{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--rc);letter-spacing:.05em;line-height:1;}
+.rest-timer-skip{background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:.58rem;letter-spacing:.12em;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .big-timer{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:.1em;color:#fff;}
 .ex-card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:14px;margin-bottom:10px;}
-.ex-name{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.05em;}
-.ex-meta{display:flex;gap:12px;font-size:.62rem;color:#777;letter-spacing:.08em;margin:6px 0 8px;}
+.ex-name{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:#fff;}
+.ex-meta{display:flex;gap:12px;font-size:.62rem;color:#777;margin:6px 0 8px;}
 .ex-tip{font-size:.63rem;color:#555;margin-bottom:12px;font-style:italic;}
 .watch-btn{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#FF5733;font-size:.58rem;letter-spacing:.1em;padding:4px 10px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;}
-.sets-row{display:flex;gap:8px;flex-wrap:wrap;}
-.set-btn{width:38px;height:38px;border-radius:8px;background:#1a1a1a;border:1px solid #2a2a2a;color:#666;font-family:'Bebas Neue',sans-serif;font-size:1rem;cursor:pointer;transition:all .2s;}
-.set-done{background:var(--wc) !important;border-color:var(--wc) !important;color:#fff !important;}
+.pb-badge{display:inline-flex;font-size:.58rem;color:#F59E0B;background:#F59E0B11;border:1px solid #F59E0B33;border-radius:99px;padding:2px 8px;margin-top:3px;}
+.overload-hint{display:flex;align-items:center;gap:8px;background:#FF573314;border:1px solid #FF573333;border-radius:7px;padding:6px 10px;margin-bottom:8px;}
+.overload-last{font-size:.65rem;color:#888;}
+.overload-arrow{font-size:.75rem;color:#555;}
+.overload-target{font-size:.68rem;color:#FF5733;font-weight:600;}
+.sets-grid{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.set-row{display:flex;align-items:center;gap:10px;background:#161616;border:1px solid #1e1e1e;border-radius:8px;padding:8px 12px;}
+.set-row-done{background:#1e1e1e;border-color:#FF573344;}
+.set-num{font-size:.58rem;letter-spacing:.12em;color:#444;min-width:38px;}
+.weight-pill{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#666;font-size:.72rem;padding:5px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.weight-input{background:#0d0d0d;border:1px solid #FF573366;border-radius:6px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.8rem;padding:5px 8px;outline:none;}
+.pb-star{color:#F59E0B;font-size:.7rem;margin-left:2px;}
+.set-btn-v2{min-width:52px;height:34px;border-radius:7px;background:#1a1a1a;border:1px solid #2a2a2a;color:#555;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;cursor:pointer;}
+.set-btn-done{background:var(--wc) !important;border-color:var(--wc) !important;color:#fff !important;}
 .finish-btn{width:100%;margin-top:16px;padding:16px;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;border-radius:12px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.15em;cursor:pointer;}
-.modal-overlay{position:fixed;inset:0;background:#000000dd;z-index:9999;display:flex;align-items:flex-end;justify-content:center;}
-.modal-box{background:#111;border:1px solid #2a2a2a;border-radius:20px 20px 0 0;width:100%;max-width:430px;max-height:90vh;overflow-y:auto;scrollbar-width:none;}
-.modal-box::-webkit-scrollbar{display:none;}
-.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 12px;border-bottom:1px solid #1c1c1c;position:sticky;top:0;background:#111;z-index:1;}
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.08em;color:#fff;}
-.modal-anim-section{background:linear-gradient(135deg,#0d0d0d,#140c08);border-bottom:1px solid #1c1c1c;padding:16px 18px 12px;display:flex;align-items:center;gap:16px;}
-.ex-anim-wrap{width:130px;height:80px;flex-shrink:0;}
-.modal-badges{display:flex;flex-direction:column;gap:6px;}
-.modal-badge{font-size:.6rem;letter-spacing:.1em;padding:3px 10px;border-radius:99px;border:1px solid #333;color:#888;background:#1a1a1a;white-space:nowrap;}
-.modal-section{padding:12px 18px;border-bottom:1px solid #161616;}
-.modal-section-label{font-size:.58rem;letter-spacing:.2em;color:#444;text-transform:uppercase;margin-bottom:8px;}
-.modal-muscles{font-size:.8rem;color:#ccc;}
-.modal-cue{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;}
-.cue-num{min-width:20px;height:20px;border-radius:50%;background:#FF573322;border:1px solid #FF573344;color:#FF5733;font-size:.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.modal-cue span:last-child{font-size:.75rem;color:#bbb;line-height:1.5;}
-.modal-yt-section{padding:14px 18px 20px;}
-.yt-link-btn{display:flex;align-items:center;gap:10px;width:100%;background:#FF573318;border:1px solid #FF573355;border-radius:10px;color:#FF5733;font-family:'DM Sans',sans-serif;font-size:.8rem;padding:12px 16px;cursor:pointer;text-align:left;}
-.yt-link-btn:hover{background:#FF573330;}
-.yt-search{background:#1a1a1a;border-color:#2a2a2a;color:#888;}
-.yt-icon{font-size:1rem;flex-shrink:0;}
-.yt-arrow{margin-left:auto;font-size:.9rem;opacity:.6;}
 .swayd-hero{background:linear-gradient(135deg,#0f0f0f,#1a0f0a);border:1px solid #FF573322;border-radius:16px;padding:40px 24px;text-align:center;margin-bottom:16px;}
 .sh-wordmark{font-family:'Bebas Neue',sans-serif;font-size:4rem;letter-spacing:.3em;color:#FF5733;}
-.sh-tagline{font-size:.7rem;letter-spacing:.3em;color:#666;margin-top:4px;text-transform:uppercase;}
+.sh-tagline{font-size:.7rem;letter-spacing:.3em;color:#666;margin-top:4px;}
 .brand-manifesto{font-size:.8rem;line-height:1.7;color:#aaa;}
-.gear-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.gear-card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;position:relative;}
-.gear-icon{font-size:1.4rem;color:#FF5733;margin-bottom:4px;}
-.gear-tag{position:absolute;top:10px;right:10px;font-size:.52rem;letter-spacing:.1em;background:#FF573322;color:#FF5733;border:1px solid #FF573344;border-radius:99px;padding:2px 7px;}
-.gear-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.05em;color:#fff;line-height:1.2;}
-.gear-desc{font-size:.62rem;color:#777;flex:1;}
-.gear-btn{background:none;border:1px solid #2a2a2a;border-radius:6px;color:#888;font-size:.6rem;letter-spacing:.15em;padding:6px;cursor:pointer;margin-top:4px;font-family:'DM Sans',sans-serif;}
-.gear-btn:hover{border-color:#FF5733;color:#FF5733;}
 .community-row{display:flex;justify-content:space-around;padding:16px;background:#111;border:1px solid #1c1c1c;border-radius:12px;}
 .cs-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#FF5733;text-align:center;}
 .cs-label{font-size:.6rem;color:#555;text-align:center;letter-spacing:.1em;}
-.app-nav{display:flex;border-top:1px solid #161616;background:#080808;padding:10px 0 max(10px,env(safe-area-inset-bottom));flex-shrink:0;}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 0;transition:all .15s;}
-.nav-icon{font-size:1.1rem;color:#333;}
+.app-nav{display:flex;border-top:1px solid #161616;background:#080808;padding:10px 0;flex-shrink:0;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 0;}
 .nav-label{font-size:.52rem;letter-spacing:.15em;color:#333;font-family:'DM Sans',sans-serif;}
-.nav-active .nav-icon,.nav-active .nav-label{color:#FF5733;}
+.nav-active .nav-label{color:#FF5733;}
 .onboard-wrap{position:fixed;inset:0;background:#0a0a0a;z-index:8888;display:flex;flex-direction:column;max-width:430px;margin:0 auto;padding:0 24px 32px;}
 .ob-screen{display:flex;flex-direction:column;flex:1;padding-top:48px;}
 .ob-progress{display:flex;gap:6px;justify-content:center;padding:16px 0 0;}
-.ob-dot{width:6px;height:6px;border-radius:50%;background:#222;transition:all .3s;}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:#222;}
 .ob-dot-active{background:#FF5733;transform:scale(1.3);}
 .ob-dot-done{background:#FF573366;}
 .ob-logo{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:.15em;color:#fff;text-align:center;margin-bottom:4px;}
 .ob-welcome-tag{text-align:center;font-size:.65rem;letter-spacing:.25em;color:#444;margin-bottom:32px;}
-.ob-headline{font-family:'Bebas Neue',sans-serif;font-size:3rem;line-height:1;color:#fff;text-align:center;margin-bottom:16px;letter-spacing:.05em;}
+.ob-headline{font-family:'Bebas Neue',sans-serif;font-size:3rem;line-height:1;color:#fff;text-align:center;margin-bottom:16px;}
 .ob-body{font-size:.82rem;color:#666;text-align:center;line-height:1.7;max-width:280px;margin:0 auto;}
 .ob-step-label{font-size:.58rem;letter-spacing:.25em;color:#FF5733;margin-bottom:8px;}
-.ob-step-title{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#fff;letter-spacing:.05em;margin-bottom:20px;line-height:1.1;}
-.ob-input{width:100%;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px 14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;margin-bottom:4px;}
+.ob-step-title{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#fff;margin-bottom:20px;line-height:1.1;}
+.ob-input{width:100%;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px 14px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;margin-bottom:4px;}
 .ob-input:focus{border-color:#FF573366;}
-.ob-input::placeholder{color:#333;}
 .ob-option-row{display:flex;gap:10px;margin-bottom:20px;}
-.ob-option-btn{flex:1;background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;color:#888;font-size:.75rem;letter-spacing:.1em;}
+.ob-option-btn{flex:1;background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;color:#888;font-size:.75rem;}
 .ob-option-active{background:#FF573318;border-color:#FF573366;color:#FF5733;}
 .ob-field{margin-bottom:16px;}
 .ob-field-label{font-size:.58rem;letter-spacing:.2em;color:#555;margin-bottom:6px;}
 .ob-unit-toggle{display:flex;border:1px solid #2a2a2a;border-radius:8px;overflow:hidden;}
-.ob-unit-btn{background:transparent;border:none;padding:8px 14px;color:#555;font-family:'DM Sans',sans-serif;font-size:.72rem;cursor:pointer;letter-spacing:.05em;}
+.ob-unit-btn{background:transparent;border:none;padding:8px 14px;color:#555;font-family:'DM Sans',sans-serif;font-size:.72rem;cursor:pointer;}
 .ob-unit-active{background:#FF573320;color:#FF5733;}
 .ob-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;}
 .ob-list-item{background:#111;border:1px solid #1c1c1c;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#888;font-family:'DM Sans',sans-serif;}
 .ob-list-active{background:#FF573314;border-color:#FF573355;color:#fff;}
 .ob-goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
 .ob-goal-card{background:#111;border:1px solid #1c1c1c;border-radius:12px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;border-top:2px solid transparent;}
-.ob-goal-active{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 8%,transparent);}
-.ob-goal-icon{font-size:1.6rem;color:#aaa;}
-.ob-goal-label{font-size:.62rem;color:#888;letter-spacing:.08em;text-align:center;line-height:1.3;}
+.ob-goal-active{border-color:var(--gc);background:#1a1a1a;}
+.ob-goal-label{font-size:.62rem;color:#888;text-align:center;line-height:1.3;}
 .ob-goal-active .ob-goal-label{color:#fff;}
-.ob-goal-pill{display:inline-flex;align-items:center;border-radius:99px;border:1px solid;padding:3px 12px;font-size:.6rem;letter-spacing:.12em;margin-bottom:16px;}
+.ob-goal-pill{display:inline-flex;align-items:center;border-radius:99px;border:1px solid;padding:3px 12px;font-size:.6rem;margin-bottom:16px;}
 .ob-macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
 .ob-macro-card{background:#111;border:1px solid #1c1c1c;border-radius:10px;padding:14px 12px;border-top:2px solid var(--mc);}
-.ob-macro-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#fff;letter-spacing:.05em;line-height:1;}
+.ob-macro-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#fff;line-height:1;}
 .ob-macro-unit{font-size:.7rem;color:#555;margin-left:2px;}
-.ob-macro-label{font-size:.58rem;color:#555;letter-spacing:.15em;margin-top:3px;}
+.ob-macro-label{font-size:.58rem;color:#555;margin-top:3px;}
 .ob-calc-note{font-size:.63rem;color:#444;line-height:1.6;text-align:center;margin-bottom:8px;}
 .ob-nav-row{display:flex;gap:10px;margin-top:auto;padding-top:24px;}
 .ob-btn-primary{width:100%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;border-radius:12px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.15em;padding:15px;cursor:pointer;}
 .ob-btn-primary:disabled{opacity:.35;cursor:default;}
 .ob-btn-ghost{background:transparent;border:1px solid #2a2a2a;border-radius:12px;color:#666;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.15em;padding:14px 18px;cursor:pointer;}
-.ob-btn-ghost:hover{border-color:#555;color:#aaa;}
 .profile-avatar{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FF5733,#FF8C00);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#fff;flex-shrink:0;}
 .profile-stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #161616;}
 .profile-stat-row:last-child{border-bottom:none;}
 .profile-stat-label{font-size:.6rem;letter-spacing:.15em;color:#555;}
 .profile-stat-val{font-size:.85rem;color:#ccc;}
-.rest-timer-bar{position:relative;background:#111;border:1px solid #1c1c1c;border-radius:12px;overflow:hidden;margin-bottom:16px;}
-.rest-timer-fill{position:absolute;inset:0;background:var(--rc);width:var(--rp);opacity:.15;transition:width 1s linear;}
-.rest-timer-content{position:relative;display:flex;align-items:center;gap:12px;padding:12px 16px;}
-.rest-timer-label{flex:1;font-size:.62rem;letter-spacing:.12em;color:#aaa;}
-.rest-timer-count{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--rc);letter-spacing:.05em;line-height:1;min-width:44px;text-align:right;}
-.rest-timer-skip{background:none;border:1px solid #2a2a2a;border-radius:6px;color:#555;font-size:.58rem;letter-spacing:.12em;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.rest-timer-skip:hover{color:#aaa;border-color:#555;}
-.pb-badge{display:inline-flex;align-items:center;gap:4px;font-size:.58rem;letter-spacing:.1em;color:#F59E0B;background:#F59E0B11;border:1px solid #F59E0B33;border-radius:99px;padding:2px 8px;margin-top:3px;}
-.pb-star{color:#F59E0B;font-size:.7rem;}
-.sets-grid{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
-.set-row{display:flex;align-items:center;gap:10px;background:#161616;border:1px solid #1e1e1e;border-radius:8px;padding:8px 12px;transition:all .2s;}
-.set-row-done{background:color-mix(in srgb,var(--wc) 8%,#161616);border-color:color-mix(in srgb,var(--wc) 30%,transparent);}
-.set-num{font-size:.58rem;letter-spacing:.12em;color:#444;min-width:38px;}
-.weight-input-wrap{flex:1;}
-.weight-pill{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#666;font-size:.72rem;padding:5px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:4px;}
-.weight-pill:hover{border-color:#FF573344;color:#aaa;}
-.weight-input{background:#0d0d0d;border:1px solid #FF573366;border-radius:6px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.8rem;padding:5px 8px;outline:none;}
-.set-btn-v2{min-width:52px;height:34px;border-radius:7px;background:#1a1a1a;border:1px solid #2a2a2a;color:#555;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;cursor:pointer;transition:all .2s;}
-.set-btn-done{background:var(--wc) !important;border-color:var(--wc) !important;color:#fff !important;}
-.history-card{display:flex;background:#111;border:1px solid #1c1c1c;border-radius:12px;margin-bottom:8px;overflow:hidden;}
-.history-color-bar{width:3px;background:var(--hc);flex-shrink:0;}
-.history-stat{display:flex;flex-direction:column;gap:2px;}
-.history-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#ccc;letter-spacing:.05em;line-height:1;}
-.history-stat-label{font-size:.52rem;letter-spacing:.15em;color:#444;}
-.home-stats-row{display:flex;gap:8px;margin-bottom:12px;}
-.home-stat-card{flex:1;padding:12px 12px 10px;}
-.water-glasses{display:flex;gap:4px;flex-wrap:wrap;}
-.water-glass{width:14px;height:18px;border-radius:2px 2px 4px 4px;border:1px solid #2a2a2a;background:#1a1a1a;transition:all .2s;}
-.water-glass-full{background:#3B82F6;border-color:#3B82F655;box-shadow:0 0 4px #3B82F633;}
-.water-btn{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;color:#888;font-family:'DM Sans',sans-serif;font-size:.7rem;padding:6px 0;cursor:pointer;transition:all .15s;}
-.water-btn:hover:not(:disabled){border-color:#3B82F644;color:#3B82F6;}
-.water-btn:disabled{opacity:.3;cursor:default;}
-.water-btn-add{color:#3B82F6;border-color:#3B82F633;background:#3B82F611;}
-.nudge-card{background:linear-gradient(135deg,#111 0%,#0f1a14 100%);border:1px solid #10B98133;border-radius:14px;padding:14px 16px;margin-bottom:16px;}
-.nudge-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.nudge-label{font-size:.58rem;letter-spacing:.22em;color:#10B981;}
-.nudge-refresh{background:none;border:none;color:#444;font-size:1rem;cursor:pointer;padding:0;line-height:1;transition:color .2s;}
-.nudge-refresh:hover:not(:disabled){color:#10B981;}
-.nudge-refresh:disabled{opacity:.4;}
-.nudge-text{font-size:.78rem;color:#ccc;line-height:1.6;}
-.nudge-loading{display:flex;gap:5px;align-items:center;height:20px;}
-.nudge-dot{width:5px;height:5px;border-radius:50%;background:#10B981;animation:nudgePulse 1.2s ease-in-out infinite;}
-.nudge-dot:nth-child(2){animation-delay:.2s;}
-.nudge-dot:nth-child(3){animation-delay:.4s;}
-@keyframes nudgePulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
-.overload-hint{display:flex;align-items:center;gap:8px;background:#FF573314;border:1px solid #FF573333;border-radius:7px;padding:6px 10px;margin-bottom:8px;}
-.overload-last{font-size:.65rem;color:#888;}
-.overload-arrow{font-size:.75rem;color:#FF573366;}
-.overload-target{font-size:.68rem;color:#FF5733;font-weight:600;letter-spacing:.04em;}
 `;
