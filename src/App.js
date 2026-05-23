@@ -1626,8 +1626,8 @@ export default function SwaydApp() {
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;height:100vh;overflow:hidden;}
-.app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;background:#0a0a0a;}
+body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;height:100dvh;overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;background:#0a0a0a;position:relative;}
 .app-header{display:flex;align-items:center;gap:10px;padding:14px 20px 10px;border-bottom:1px solid #1a1a1a;flex-shrink:0;}
 .brand{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.1em;color:#fff;line-height:1;}
 .brand-s{color:#FF5733;}
@@ -1636,7 +1636,7 @@ body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;hei
 .timer-dot{width:6px;height:6px;border-radius:50%;background:#FF5733;animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .profile-btn{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FF5733,#FF8C00);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;cursor:pointer;}
-.app-main{flex:1;overflow-y:auto;padding:0 16px 16px;scrollbar-width:none;}
+.app-main{flex:1;overflow-y:auto;padding:0 16px 16px;scrollbar-width:none;padding-bottom:calc(16px + env(safe-area-inset-bottom));}
 .app-main::-webkit-scrollbar{display:none;}
 .page{padding-top:16px;padding-bottom:16px;}
 .fade-in{animation:fadeIn .25s ease;}
@@ -1800,7 +1800,7 @@ body,#root{background:#0a0a0a;color:#e0e0e0;font-family:'DM Sans',sans-serif;hei
 .community-row{display:flex;justify-content:space-around;padding:16px;background:#111;border:1px solid #1c1c1c;border-radius:12px;}
 .cs-num{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:#FF5733;text-align:center;}
 .cs-label{font-size:.6rem;color:#555;text-align:center;letter-spacing:.1em;}
-.app-nav{display:flex;border-top:1px solid #161616;background:#080808;padding:10px 0;flex-shrink:0;}
+.app-nav{display:flex;border-top:1px solid #161616;background:#080808;padding:10px 0 calc(10px + env(safe-area-inset-bottom));flex-shrink:0;}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 0;}
 .nav-label{font-size:.52rem;letter-spacing:.15em;color:#333;font-family:'DM Sans',sans-serif;}
 .nav-active .nav-label{color:#FF5733;}
