@@ -32,7 +32,7 @@ const UNITS = ["g","ml","oz","cup","tbsp","tsp","serving"];
 const REST_PRESETS = [30,60,90,120,180];
 const COLORS = ["#FF5733","#3B82F6","#10B981","#F59E0B","#A855F7","#EC4899","#14B8A6","#F97316"];
 const MEALS = ["Breakfast","Lunch","Dinner","Snack","Post-Workout"];
-const API_BASE = (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) || "http://localhost:3001";
+const API_BASE = (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) || "https://swayd-backend-staging.up.railway.app";
 
 const GOAL_LABELS = {cut:"Cut - Lose Fat",maintain:"Maintain - Stay Lean",bulk:"Bulk - Build Muscle",aggressiveBulk:"Aggressive Bulk"};
 const GOAL_COLORS = {cut:"#3B82F6",maintain:"#10B981",bulk:"#FF5733",aggressiveBulk:"#F59E0B"};
