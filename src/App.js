@@ -398,7 +398,7 @@ export default function SwaydApp() {
   const [foodSearchLoading,setFoodSearchLoading]=useState(false);
   const [foodSearchError,setFoodSearchError]=useState(null);
   const [quickFoods,setQuickFoods]=useState(()=>{try{const s=localStorage.getItem("swayd_quickfoods");return s?JSON.parse(s):DEFAULT_QUICK_FOODS;}catch{return DEFAULT_QUICK_FOODS;}});
-  const [expandedFood,setExpandedFood]=useState(null);
+  const [editingFoodLog,setEditingFoodLog]=useState(null);
   const [editingFood,setEditingFood]=useState({});
   const [showQuickFoodEditor,setShowQuickFoodEditor]=useState(false);
   const [stepLog,setStepLog]=useState(()=>{try{const s=localStorage.getItem("swayd_steps");return s?JSON.parse(s):{};} catch{return {};}});
@@ -792,14 +792,50 @@ export default function SwaydApp() {
                     <div key={meal} style={{marginBottom:14}}>
                       <div className="meal-heading">{meal}</div>
                       {items.map(f=>(
-                        <div key={f.id} className="food-row">
-                          <div className="food-row-name">{f.name}</div>
-                          <div className="food-row-macros">
-                            <span style={{color:"#FF5733"}}>{f.cal}</span>
-                            <span style={{color:"#3B82F6"}}>{f.protein}p</span>
-                            <span style={{color:"#F59E0B"}}>{f.carbs}c</span>
-                          </div>
-                          <button className="remove-btn" onClick={()=>removeFood(f.id)}>x</button>
+                        <div key={f.id}>
+                          {editingFoodLog===f.id?(
+                            <div style={{background:"#161616",border:"1px solid #FF573344",borderRadius:8,padding:"10px 12px",marginBottom:6}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                                <div style={{fontSize:".75rem",color:"#fff",fontWeight:600}}>{f.name}</div>
+                                <button style={{background:"none",border:"none",color:"#555",cursor:"pointer",fontSize:".8rem"}} onClick={()=>setEditingFoodLog(null)}>✕</button>
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+                                <div>
+                                  <div className="form-label">AMOUNT</div>
+                                  <input className="form-input" style={{padding:"5px 8px"}} type="number" defaultValue={f.amount||1}
+                                    onChange={e=>setFoodLog(p=>p.map(x=>x.id===f.id?{...x,amount:Number(e.target.value)}:x))}/>
+                                </div>
+                                <div>
+                                  <div className="form-label">UNIT</div>
+                                  <select className="form-input" style={{padding:"5px 8px"}} defaultValue={f.unit||"serving"}
+                                    onChange={e=>setFoodLog(p=>p.map(x=>x.id===f.id?{...x,unit:e.target.value}:x))}>
+                                    {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+                                  </select>
+                                </div>
+                                {[{k:"cal",label:"CALORIES",color:"#FF5733"},{k:"protein",label:"PROTEIN",color:"#3B82F6"},{k:"carbs",label:"CARBS",color:"#F59E0B"},{k:"fat",label:"FAT",color:"#10B981"}].map(field=>(
+                                  <div key={field.k}>
+                                    <div className="form-label" style={{color:field.color}}>{field.label}</div>
+                                    <input className="form-input" style={{padding:"5px 8px"}} type="number" defaultValue={f[field.k]||0}
+                                      onChange={e=>setFoodLog(p=>p.map(x=>x.id===f.id?{...x,[field.k]:Number(e.target.value)}:x))}/>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{display:"flex",gap:8}}>
+                                <button className="create-btn" style={{marginTop:0,flex:2}} onClick={()=>setEditingFoodLog(null)}>SAVE</button>
+                                <button style={{flex:1,background:"none",border:"1px solid #ff3b3b33",borderRadius:8,color:"#ff3b3b",fontSize:".7rem",cursor:"pointer"}} onClick={()=>{removeFood(f.id);setEditingFoodLog(null);}}>REMOVE</button>
+                              </div>
+                            </div>
+                          ):(
+                            <div className="food-row" onClick={()=>setEditingFoodLog(f.id)} style={{cursor:"pointer"}}>
+                              <div className="food-row-name">{f.name}</div>
+                              <div className="food-row-macros">
+                                <span style={{color:"#FF5733"}}>{f.cal}</span>
+                                <span style={{color:"#3B82F6"}}>{f.protein}p</span>
+                                <span style={{color:"#F59E0B"}}>{f.carbs}c</span>
+                              </div>
+                              <div style={{fontSize:".6rem",color:"#444"}}>EDIT</div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
